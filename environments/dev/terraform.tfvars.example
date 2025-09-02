@@ -1,0 +1,39 @@
+# Configuração de exemplo para AWS Academy
+# Copie este arquivo para terraform.tfvars e ajuste conforme necessário
+
+# Configurações básicas
+aws_region   = "us-east-1"
+project_name = "fiap-soat"
+environment  = "dev"
+
+# Networking
+vpc_cidr = "10.0.0.0/16"
+
+# EKS
+cluster_name    = "fiap-soat-cluster"
+cluster_version = "1.27"
+
+# IMPORTANTE: NAT Gateway custa ~$45/mês
+# Deixe false para máxima economia no AWS Academy
+enable_nat_gateway = false
+
+# Node Groups - Configuração econômica
+node_groups = {
+  general = {
+    instance_types = ["t3.micro"]  # Mais barato disponível
+    capacity_type  = "ON_DEMAND"   # Previsível para orçamento
+    min_size      = 1
+    max_size      = 2              # Limite para evitar custos altos
+    desired_size  = 1
+  }
+}
+
+# Tags para controle de custos
+tags = {
+  Project      = "fiap-soat-fase3"
+  Owner        = "rs94458"
+  Budget       = "aws-academy-50usd"
+  CostCenter   = "education"
+  AutoShutdown = "true"
+  DeleteAfter  = "2025-10-01"  # Lembrete para cleanup
+}
