@@ -1,0 +1,148 @@
+# Deployment da aplicação FIAP SOAT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fiap-soat-app
+  namespace: fiap-soat
+  labels:
+    app: fiap-soat-app
+    version: v1
+    project: fiap-soat-fase3
+spec:
+  replicas: 1  # Economia AWS Academy - mínimo necessário
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: fiap-soat-app
+  template:
+    metadata:
+      labels:
+        app: fiap-soat-app
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: fiap-soat-app
+      
+      # Configurações de segurança
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      containers:
+      - name: fiap-soat-app
+        # ALTERAR: Use a imagem da sua aplicação
+        image: nginx:alpine  # Placeholder - substituir pela imagem real
+        imagePullPolicy: Always
+        
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        
+        # Variáveis de ambiente do ConfigMap
+        envFrom:
+        - configMapRef:
+            name: fiap-soat-config
+        
+        # Variáveis sensíveis do Secret
+        env:
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: fiap-soat-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: fiap-soat-secrets
+              key: DB_PASSWORD
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: fiap-soat-secrets
+              key: JWT_SECRET
+        
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Recursos limitados para AWS Academy (t3.micro)
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+            ephemeral-storage: "1Gi"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+            ephemeral-storage: "500Mi"
+        
+        # Security context do container
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false  # Ajustar conforme aplicação
+          capabilities:
+            drop:
+            - ALL
+        
+        # Volume mounts (se necessário)
+        # volumeMounts:
+        # - name: tmp
+        #   mountPath: /tmp
+      
+      # Volumes temporários (se necessário)
+      # volumes:
+      # - name: tmp
+      #   emptyDir: {}
+      
+      # Configurações de scheduling para otimização
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - fiap-soat-app
+              topologyKey: kubernetes.io/hostname
+      
+      # Tolerations para nodes específicos (se necessário)
+      tolerations:
+      - effect: NoSchedule
+        key: node-type
+        operator: Equal
+        value: general
+      
+      # DNS config para otimização
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "2"
+        - name: edns0

@@ -41,34 +41,32 @@ resource "aws_subnet" "private" {
 }
 
 # NAT Gateway (apenas 1 para economia - AWS Academy)
-# Comentado para máxima economia - usar apenas se necessário
-/*
+# Descomentado mas controlado por variável enable_nat_gateway
 resource "aws_eip" "nat" {
   count = var.enable_nat_gateway ? 1 : 0
-  
+
   domain = "vpc"
-  
+
   tags = {
     Name        = "${var.project_name}-nat-eip"
     Environment = var.environment
     Project     = "fiap-soat-fase3"
   }
-  
+
   depends_on = [aws_internet_gateway.main]
 }
 
 resource "aws_nat_gateway" "main" {
   count = var.enable_nat_gateway ? 1 : 0
-  
+
   allocation_id = aws_eip.nat[0].id
   subnet_id     = aws_subnet.public[0].id
-  
+
   tags = {
     Name        = "${var.project_name}-nat"
     Environment = var.environment
     Project     = "fiap-soat-fase3"
   }
-  
+
   depends_on = [aws_internet_gateway.main]
 }
-*/

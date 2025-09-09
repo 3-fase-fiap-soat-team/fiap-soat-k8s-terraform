@@ -46,19 +46,55 @@ variable "node_groups" {
     general = object({
       instance_types = list(string)
       capacity_type  = string
-      min_size      = number
-      max_size      = number
-      desired_size  = number
+      min_size       = number
+      max_size       = number
+      desired_size   = number
     })
   })
   default = {
     general = {
-      instance_types = ["t3.micro"]  # Mais econômico
-      capacity_type  = "ON_DEMAND"   # Previsível para Academy
-      min_size      = 1
-      max_size      = 2              # Limite baixo para economia
-      desired_size  = 1
+      instance_types = ["t3.micro"] # Mais econômico
+      capacity_type  = "ON_DEMAND"  # Previsível para Academy
+      min_size       = 1
+      max_size       = 2 # Limite baixo para economia
+      desired_size   = 1
     }
+  }
+}
+
+variable "cluster_addons" {
+  description = "Add-ons do EKS (apenas gratuitos para AWS Academy)"
+  type = map(object({
+    version = string
+  }))
+  default = {
+    kube-proxy = {
+      version = "v1.27.6-eksbuild.2"
+    }
+    vpc-cni = {
+      version = "v1.15.4-eksbuild.1"
+    }
+    coredns = {
+      version = "v1.10.1-eksbuild.5"
+    }
+    # Comentado: add-ons pagos que custam dinheiro
+    # aws-ebs-csi-driver = {
+    #   version = "v1.24.0-eksbuild.1"
+    # }
+  }
+}
+
+variable "endpoint_config" {
+  description = "Configuração de acesso ao cluster EKS"
+  type = object({
+    private_access      = bool
+    public_access       = bool
+    public_access_cidrs = list(string)
+  })
+  default = {
+    private_access      = true
+    public_access       = true
+    public_access_cidrs = ["0.0.0.0/0"] # AWS Academy - acesso total para desenvolvimento
   }
 }
 
