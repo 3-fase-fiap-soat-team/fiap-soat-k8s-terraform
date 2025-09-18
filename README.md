@@ -1,9 +1,17 @@
-# FIAP SOAT - Kubernetes Infrastructure
+# FIAP SOAT - Kubernetes Infrastructure ✅ AWS Academy Ready
 
-Terraform para EKS - Fase 3
+Terraform para EKS - Fase 3 **[VERSÃO 1.0 - TESTADA E FUNCIONANDO]**
 
 ## 🎯 **Objetivo**
-Provisionar cluster EKS (Kubernetes) na AWS usando Terraform, otimizado para AWS Academy com foco em custos mínimos.
+Provisionar cluster EKS (Kubernetes) na AWS usando Terraform, **totalmente compatível com AWS Academy** e otimizado para budget de $50 USD.
+
+## 🏆 **STATUS: CONFIGURAÇÃO VALIDADA** ✅
+- ✅ **Terraform validation:** PASSOU
+- ✅ **EKS Cluster:** Criado com sucesso usando roles AWS Academy
+- ✅ **AWS Academy Compatibility:** 100% funcional
+- ✅ **Budget Optimization:** Configurado para $50 USD
+- ✅ **Scripts de teste:** Prontos e funcionando
+- ✅ **Aplicação:** Manifests prontos para deploy
 
 ## 👨‍💻 **Responsável**
 - **Dev 3 (rs94458)** - EKS + Infraestrutura de Integração com App
@@ -37,13 +45,44 @@ manifests/
 └── secrets/           # Secrets Kubernetes
 ```
 
-## ⚙️ **Configuração AWS Academy**
+## ⚙️ **Configuração AWS Academy** 🎓
 - **Região:** us-east-1
-- **Budget:** $50 USD (AWS Academy)
-- **Node Group:** 1x t3.micro (mais econômico)
-- **Networking:** VPC dedicada
+- **Budget:** $50 USD (AWS Academy Learner Lab)
+- **IAM Roles:** Usa roles pré-criadas do Academy (`LabEksClusterRole`, `LabEksNodeRole`)
+- **Node Group:** 1x t3.micro (mais econômico permitido)
+- **Networking:** Subnets públicas (sem NAT Gateway para economia)
 - **Add-ons:** Apenas essenciais (kube-proxy, vpc-cni, coredns)
 - **Load Balancer:** NodePort/ClusterIP (sem ELB para economia)
+
+## 🚀 **Quick Start - AWS Academy** ⚡
+
+### **1. Clone e Configure (2 minutos)**
+```bash
+git clone https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform.git
+cd fiap-soat-k8s-terraform
+
+# Configurar credenciais AWS Academy (cole o conteúdo do lab)
+./scripts/aws-config.sh
+```
+
+### **2. Teste Rápido (5 minutos)**
+```bash
+# Teste rápido e seguro com timeout automático
+./scripts/test-eks-safe.sh
+```
+
+### **3. Deploy da Aplicação**
+```bash
+# Configurar kubectl
+aws eks update-kubeconfig --region us-east-1 --name fiap-soat-cluster
+
+# Deploy da aplicação
+kubectl apply -f manifests/application/
+
+# Verificar
+kubectl get pods
+kubectl get services
+```
 
 ## 🚀 **Setup Local**
 
@@ -234,13 +273,27 @@ terraform destroy
 - **EKS Docs:** https://docs.aws.amazon.com/eks/
 - **Kubernetes Docs:** https://kubernetes.io/docs/
 
-## ⚠️ **CRÍTICO - AWS Academy**
-- **EKS Control Plane:** ~$73/mês (CARO!)
-- **Worker Nodes:** ~$15/mês por t3.micro
-- **Budget total:** $50 USD - PODE ESTOURAR RÁPIDO!
-- **Recomendação:** Criar apenas quando necessário
-- **SEMPRE destruir:** `terraform destroy` após testes
-- **Alternativa:** Usar minikube local para desenvolvimento
+## ⚠️ **IMPORTANTE - AWS Academy** 🎓
+- **EKS Control Plane:** ~$2.40/dia ($73/mês)
+- **Worker Nodes:** ~$0.50/dia (t3.micro)
+- **Budget total:** $50 USD - Dura ~20 dias com cluster ativo
+- **SEMPRE limpar:** Execute `./scripts/emergency-state-cleanup.sh` ou delete via console
+- **CRÍTICO:** Delete cluster no console AWS Academy quando não estiver usando!
+
+## 🛠️ **Scripts Incluídos** 🆕
+- `test-eks-safe.sh` - Teste com timeout automático e limite de custo
+- `emergency-state-cleanup.sh` - Limpeza de emergência quando AWS Academy bloqueia CLI
+- `force-destroy.sh` - Múltiplas estratégias para destroy
+- `monitor-cleanup.sh` - Monitora recursos ativos
+- `aws-config.sh` - Configuração automática de credenciais
+
+## 📋 **AWS Academy - Roles Pré-criadas** ✨
+O AWS Academy fornece roles específicas que devem ser usadas:
+```hcl
+# Automaticamente detectadas pelo Terraform:
+cluster_service_role = "LabEksClusterRole"    # Para o cluster EKS
+node_instance_role   = "LabEksNodeRole"       # Para worker nodes
+```
 
 ## 🛡️ **Segurança**
 - VPC isolada com subnets privadas
