@@ -46,11 +46,19 @@ manifests/
 - **Load Balancer:** NodePort/ClusterIP (sem ELB para economia)
 
 ## 🚀 **Setup Local**
+
+### **Opção 1: Setup Automatizado (Recomendado)**
 ```bash
 # Clonar repositório
 git clone https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform.git
 cd fiap-soat-k8s-terraform
 
+# Setup completo automatizado
+./scripts/setup-dev.sh
+```
+
+### **Opção 2: Setup Manual**
+```bash
 # Configurar Git
 git config user.name "rs94458"
 git config user.email "seu-email@gmail.com"
@@ -71,6 +79,28 @@ unzip awscliv2.zip && sudo ./aws/install
 terraform version
 kubectl version --client
 aws --version
+```
+
+## 🔑 **Configuração AWS Academy**
+
+### **Script de Configuração Rápida**
+```bash
+# Execute o script e cole as credenciais do AWS Academy
+./scripts/aws-config.sh
+
+# Cole o conteúdo completo no formato:
+# aws_access_key_id=ASIAUCQMSWOI2CB3BP3S
+# aws_secret_access_key=ey3nbFY1QZeN57JZC3n0QlGq733TW/bv7fnpSxBr
+# aws_session_token=IQoJb3JpZ2luX2VjEDgaC...
+# 
+# Pressione Ctrl+D para finalizar
+# O script configura automaticamente e testa a conexão
+```
+
+### **Verificação**
+```bash
+# Testar se as credenciais estão funcionando
+aws sts get-caller-identity
 ```
 
 ## 🏗️ **Desenvolvimento**
