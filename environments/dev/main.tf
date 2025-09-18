@@ -40,11 +40,12 @@ provider "aws" {
 module "vpc" {
   source = "../../modules/vpc"
 
-  project_name       = var.project_name
-  environment        = var.environment
-  vpc_cidr           = var.vpc_cidr
-  cluster_name       = var.cluster_name
-  enable_nat_gateway = var.enable_nat_gateway
+  project_name                 = var.project_name
+  environment                  = var.environment
+  vpc_cidr                     = var.vpc_cidr
+  cluster_name                 = var.cluster_name
+  enable_nat_gateway          = var.enable_nat_gateway
+  use_public_subnets_for_nodes = var.use_public_subnets_for_nodes
 
   tags = var.tags
 }
@@ -63,6 +64,9 @@ module "eks" {
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
   public_subnet_ids  = module.vpc.public_subnet_ids
+  
+  # Configuração de subnets para nodes
+  use_public_subnets_for_nodes = var.use_public_subnets_for_nodes
 
   # Node Groups
   node_groups = var.node_groups

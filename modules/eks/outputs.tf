@@ -19,13 +19,13 @@ output "cluster_security_group_id" {
 }
 
 output "cluster_iam_role_name" {
-  description = "Nome da IAM role do cluster"
-  value       = aws_iam_role.cluster.name
+  description = "Nome da IAM role do cluster (pré-criada do AWS Academy)"
+  value       = data.aws_iam_role.cluster_role.name
 }
 
 output "cluster_iam_role_arn" {
-  description = "ARN da IAM role do cluster"
-  value       = aws_iam_role.cluster.arn
+  description = "ARN da IAM role do cluster (pré-criada do AWS Academy)"
+  value       = data.aws_iam_role.cluster_role.arn
 }
 
 output "cluster_certificate_authority_data" {
@@ -52,8 +52,8 @@ output "node_groups" {
 }
 
 output "node_group_iam_role_arn" {
-  description = "ARN da IAM role dos node groups"
-  value       = aws_iam_role.node_group.arn
+  description = "ARN da IAM role dos node groups (pré-criada do AWS Academy)"
+  value       = data.aws_iam_role.node_role.arn
 }
 
 output "oidc_issuer_url" {
@@ -63,7 +63,7 @@ output "oidc_issuer_url" {
 
 output "oidc_provider_arn" {
   description = "ARN do OIDC provider para IRSA"
-  value       = try(aws_iam_openid_connect_provider.cluster[0].arn, null)
+  value       = null  # IRSA desabilitado para AWS Academy
 }
 
 output "cluster_primary_security_group_id" {
@@ -84,8 +84,5 @@ output "kubeconfig_certificate_authority_data" {
 
 output "kubectl_config" {
   description = "Comando para configurar kubectl"
-  value       = "aws eks update-kubeconfig --region ${data.aws_region.current.name} --name ${aws_eks_cluster.main.name}"
+  value       = "aws eks update-kubeconfig --region us-east-1 --name ${aws_eks_cluster.main.name}"
 }
-
-# Data source para região atual
-data "aws_region" "current" {}

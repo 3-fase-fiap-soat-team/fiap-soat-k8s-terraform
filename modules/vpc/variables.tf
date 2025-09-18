@@ -28,6 +28,12 @@ variable "enable_nat_gateway" {
   default     = false # Desabilitado por padrão para AWS Academy
 }
 
+variable "use_public_subnets_for_nodes" {
+  description = "Usar public subnets para nodes EKS (economia sem NAT Gateway)"
+  type        = bool
+  default     = true
+}
+
 variable "single_nat_gateway" {
   description = "Usar apenas 1 NAT Gateway para economia"
   type        = bool

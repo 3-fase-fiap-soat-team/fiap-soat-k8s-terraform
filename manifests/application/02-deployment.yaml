@@ -38,9 +38,67 @@ spec:
       
       containers:
       - name: fiap-soat-app
-        # ALTERAR: Use a imagem da sua aplicação
-        image: nginx:alpine  # Placeholder - substituir pela imagem real
+        # Aplicação real FIAP SOAT - substitua pela sua imagem
+        image: node:18-alpine
         imagePullPolicy: Always
+        
+        # Comando para executar aplicação de exemplo
+        command: ["/bin/sh"]
+        args: 
+          - -c
+          - |
+            cat > app.js << 'EOF'
+            const http = require('http');
+            const url = require('url');
+            
+            const server = http.createServer((req, res) => {
+              const pathname = url.parse(req.url).pathname;
+              
+              res.setHeader('Content-Type', 'application/json');
+              
+              if (pathname === '/health') {
+                res.writeHead(200);
+                res.end(JSON.stringify({ 
+                  status: 'healthy', 
+                  timestamp: new Date().toISOString(),
+                  service: 'fiap-soat-app'
+                }));
+              } else if (pathname === '/') {
+                res.writeHead(200);
+                res.end(JSON.stringify({ 
+                  message: 'FIAP SOAT - Sistema de Autoatendimento', 
+                  version: '1.0.0',
+                  environment: process.env.NODE_ENV || 'development'
+                }));
+              } else if (pathname === '/products') {
+                res.writeHead(200);
+                res.end(JSON.stringify({ 
+                  products: [
+                    { id: 1, name: 'Big Mac', price: 25.90, category: 'Lanche' },
+                    { id: 2, name: 'Coca-Cola', price: 7.50, category: 'Bebida' },
+                    { id: 3, name: 'Batata Frita', price: 12.90, category: 'Acompanhamento' }
+                  ]
+                }));
+              } else if (pathname === '/orders') {
+                res.writeHead(200);
+                res.end(JSON.stringify({ 
+                  orders: [
+                    { id: 1, status: 'preparando', total: 46.30 },
+                    { id: 2, status: 'pronto', total: 33.40 }
+                  ]
+                }));
+              } else {
+                res.writeHead(404);
+                res.end(JSON.stringify({ error: 'Not Found' }));
+              }
+            });
+            
+            const PORT = process.env.PORT || 3000;
+            server.listen(PORT, '0.0.0.0', () => {
+              console.log(`FIAP SOAT App running on port ${PORT}`);
+            });
+            EOF
+            node app.js
         
         ports:
         - name: http
@@ -54,6 +112,10 @@ spec:
         
         # Variáveis sensíveis do Secret
         env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
         - name: DB_USER
           valueFrom:
             secretKeyRef:

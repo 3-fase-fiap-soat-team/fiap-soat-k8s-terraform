@@ -9,6 +9,18 @@ variable "cluster_version" {
   default     = "1.27"
 }
 
+variable "enable_irsa" {
+  description = "Enable IAM Roles for Service Accounts"
+  type        = bool
+  default     = true
+}
+
+variable "use_public_subnets_for_nodes" {
+  description = "Use public subnets for EKS nodes (saves NAT Gateway costs)"
+  type        = bool
+  default     = true
+}
+
 variable "vpc_id" {
   description = "ID da VPC"
   type        = string
@@ -65,12 +77,6 @@ variable "endpoint_config" {
     public_access       = true
     public_access_cidrs = ["0.0.0.0/0"] # AWS Academy - acesso total
   }
-}
-
-variable "enable_irsa" {
-  description = "Habilitar IAM Roles for Service Accounts"
-  type        = bool
-  default     = true
 }
 
 variable "cluster_addons" {

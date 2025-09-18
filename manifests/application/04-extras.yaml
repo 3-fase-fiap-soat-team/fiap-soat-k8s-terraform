@@ -1,74 +1,93 @@
-# PodDisruptionBudget para disponibilidade
-apiVersion: policy/v1
-kind: PodDisruptionBudget
+# ConfigMap com configurações da aplicação
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: fiap-soat-app-pdb
+  name: fiap-soat-config
   namespace: fiap-soat
   labels:
     app: fiap-soat-app
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app: fiap-soat-app
+    project: fiap-soat-fase3
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  API_VERSION: "v1"
+  SERVICE_NAME: "fiap-soat-autoatendimento"
+  ENABLE_CORS: "true"
+  MAX_UPLOAD_SIZE: "10mb"
+  SESSION_TIMEOUT: "1800"
+  RATE_LIMIT_WINDOW: "900000"
+  RATE_LIMIT_MAX: "100"
+
 ---
-# NetworkPolicy para segurança (Opcional - comentado para simplicidade)
-# Descomente se precisar de isolamento de rede
-# apiVersion: networking.k8s.io/v1
-# kind: NetworkPolicy
-# metadata:
-#   name: fiap-soat-app-netpol
-#   namespace: fiap-soat
-# spec:
-#   podSelector:
-#     matchLabels:
-#       app: fiap-soat-app
-#   policyTypes:
-#   - Ingress
-#   - Egress
-#   ingress:
-#   - from:
-#     - namespaceSelector:
-#         matchLabels:
-#           name: fiap-soat
-#     - namespaceSelector:
-#         matchLabels:
-#           name: kube-system
-#     ports:
-#     - protocol: TCP
-#       port: 3000
-#   egress:
-#   - {} # Permite todo tráfego de saída
+# Secret com dados sensíveis
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fiap-soat-secrets
+  namespace: fiap-soat
+  labels:
+    app: fiap-soat-app
+    project: fiap-soat-fase3
+type: Opaque
+data:
+  # Valores em base64 - ALTERE EM PRODUÇÃO
+  # echo -n "usuario_db" | base64
+  DB_USER: dXN1YXJpb19kYg==
+  # echo -n "senha_secreta_123" | base64  
+  DB_PASSWORD: c2VuaGFfc2VjcmV0YV8xMjM=
+  # echo -n "jwt_super_secret_key_fiap_2024" | base64
+  JWT_SECRET: and0X3N1cGVyX3NlY3JldF9rZXlfZmlhcF8yMDI0
+
 ---
-# ServiceMonitor para Prometheus (se usar monitoring)
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
+# Service Account para a aplicação
+apiVersion: v1
+kind: ServiceAccount
 metadata:
   name: fiap-soat-app
   namespace: fiap-soat
   labels:
     app: fiap-soat-app
     project: fiap-soat-fase3
-spec:
-  selector:
-    matchLabels:
-      app: fiap-soat-app
-  endpoints:
-  - port: http
-    path: /metrics
-    interval: 30s
-    scrapeTimeout: 10s
+  annotations:
+    # IRSA - IAM Role para Service Account (se necessário)
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/fiap-soat-app-role
+
 ---
-# PodMonitor alternativo (se não usar ServiceMonitor)
-# apiVersion: monitoring.coreos.com/v1
-# kind: PodMonitor
+# PodDisruptionBudget para disponibilidade (comentado para economia)
+# apiVersion: policy/v1
+# kind: PodDisruptionBudget
 # metadata:
-#   name: fiap-soat-app-pods
+#   name: fiap-soat-app-pdb
 #   namespace: fiap-soat
+#   labels:
+#     app: fiap-soat-app
 # spec:
+#   minAvailable: 1
 #   selector:
 #     matchLabels:
 #       app: fiap-soat-app
-#   podMetricsEndpoints:
-#   - port: http
-#     path: /metrics
+
+---
+# NetworkPolicy para segurança (simplificada)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: fiap-soat-app-netpol
+  namespace: fiap-soat
+  labels:
+    app: fiap-soat-app
+spec:
+  podSelector:
+    matchLabels:
+      app: fiap-soat-app
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 3000
+  egress:
+  - {} # Permitir todo tráfego de saída

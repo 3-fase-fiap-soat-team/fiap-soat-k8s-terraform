@@ -1,4 +1,4 @@
-# Configuração de exemplo para AWS Academy
+# terraform.tfvars - Configuração otimizada para AWS Academy
 # Copie este arquivo para terraform.tfvars e ajuste conforme necessário
 
 # Configurações básicas
@@ -6,34 +6,58 @@ aws_region   = "us-east-1"
 project_name = "fiap-soat"
 environment  = "dev"
 
-# Networking
+# VPC - Configuração econômica
 vpc_cidr = "10.0.0.0/16"
 
-# EKS
+# EKS Cluster
 cluster_name    = "fiap-soat-cluster"
-cluster_version = "1.27"
+cluster_version = "1.28"  # Versão mais recente estável
 
-# IMPORTANTE: NAT Gateway custa ~$45/mês
-# Deixe false para máxima economia no AWS Academy
+# IMPORTANTE: NAT Gateway desabilitado para economia
+# Nodes serão colocados em public subnets para acesso à internet
 enable_nat_gateway = false
 
-# Node Groups - Configuração econômica
+# Configuração otimizada para AWS Academy
+use_public_subnets_for_nodes = true  # NOVO: nodes em public subnets
+
+# Node Groups - Configuração ultra-econômica
 node_groups = {
   general = {
-    instance_types = ["t3.micro"]  # Mais barato disponível
-    capacity_type  = "ON_DEMAND"   # Previsível para orçamento
-    min_size      = 1
-    max_size      = 2              # Limite para evitar custos altos
-    desired_size  = 1
+    instance_types = ["t3.micro"]     # Menor instância disponível
+    capacity_type  = "ON_DEMAND"      # Previsível para Academy
+    min_size       = 1                # Mínimo absoluto
+    max_size       = 1                # Limite para evitar escalonamento
+    desired_size   = 1                # Apenas 1 node
   }
+}
+
+# Add-ons essenciais (apenas gratuitos)
+cluster_addons = {
+  kube-proxy = {
+    version = "v1.28.2-eksbuild.2"
+  }
+  vpc-cni = {
+    version = "v1.15.4-eksbuild.1"
+  }
+  coredns = {
+    version = "v1.10.1-eksbuild.6"
+  }
+}
+
+# Acesso ao cluster - Aberto para desenvolvimento
+endpoint_config = {
+  private_access      = true
+  public_access       = true
+  public_access_cidrs = ["0.0.0.0/0"]  # AWS Academy - desenvolvimento
 }
 
 # Tags para controle de custos
 tags = {
   Project      = "fiap-soat-fase3"
+  Environment  = "dev"
   Owner        = "rs94458"
   Budget       = "aws-academy-50usd"
   CostCenter   = "education"
   AutoShutdown = "true"
-  DeleteAfter  = "2025-10-01"  # Lembrete para cleanup
+  Team         = "3-fase-fiap-soat-team"
 }
