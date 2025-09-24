@@ -1,2 +1,3 @@
 #!/bin/bash
-/etc/eks/bootstrap.sh ${cluster_name}
+# EKS Bootstrap script
+/etc/eks/bootstrap.sh fiap-soat-cluster

@@ -163,9 +163,10 @@ resource "aws_launch_template" "node_group" {
   
   vpc_security_group_ids = [aws_security_group.node_group.id]
   
-  user_data = base64encode(templatefile("${path.module}/userdata-simple.sh", {
-    cluster_name = var.cluster_name
-  }))
+  # Sem user data - usar AMI otimizado do EKS padrão
+  # user_data = base64encode(templatefile("${path.module}/userdata-simple.sh", {
+  #   cluster_name = var.cluster_name
+  # }))
 
   metadata_options {
     http_endpoint               = "enabled"
