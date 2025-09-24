@@ -1,17 +1,18 @@
 # FIAP SOAT - Kubernetes Infrastructure ✅ AWS Academy Ready
 
-Terraform para EKS - Fase 3 **[VERSÃO 1.0 - TESTADA E FUNCIONANDO]**
+Terraform para EKS - Fase 3 **[VERSÃO 2.0 - TRABALHO FINAL]**
 
 ## 🎯 **Objetivo**
-Provisionar cluster EKS (Kubernetes) na AWS usando Terraform, **totalmente compatível com AWS Academy** e otimizado para budget de $50 USD.
+Provisionar cluster EKS (Kubernetes) na AWS usando Terraform, **totalmente compatível com AWS Academy** e otimizado para budget de $50 USD. Inclui aplicação NestJS completa para o trabalho final.
 
-## 🏆 **STATUS: CONFIGURAÇÃO VALIDADA** ✅
-- ✅ **Terraform validation:** PASSOU
+## 🏆 **STATUS: PRODUÇÃO READY** ✅
+- ✅ **Aplicação NestJS:** Clean Architecture completa
 - ✅ **EKS Cluster:** Criado com sucesso usando roles AWS Academy
 - ✅ **AWS Academy Compatibility:** 100% funcional
-- ✅ **Budget Optimization:** Configurado para $50 USD
-- ✅ **Scripts de teste:** Prontos e funcionando
-- ✅ **Aplicação:** Manifests prontos para deploy
+- ✅ **Scripts Organizados:** 6 scripts essenciais para trabalho final
+- ✅ **Testes de Carga:** Load tests completos
+- ✅ **Deploy Automatizado:** ECR + Kubernetes
+- ✅ **Cleanup Automático:** Evita custos AWS
 
 ## 👨‍💻 **Responsável**
 - **Dev 3 (rs94458)** - EKS + Infraestrutura de Integração com App
@@ -190,13 +191,36 @@ enable_nat_gateway = false      # Economia (usar só subnets públicas)
 single_nat_gateway = true       # Se precisar de NAT
 ```
 
-## 🔄 **Workflow de Desenvolvimento**
-1. **Branch:** `feature/[nome-da-feature]`
-2. **Desenvolvimento:** Modificar Terraform + manifests K8s
-3. **Teste:** `terraform plan` + validação manifests
-4. **PR:** Solicitar review do team
-5. **CI/CD:** GitHub Actions valida Terraform
-6. **Deploy:** Manual para cluster (cuidado com custos)
+## � **Scripts Organizados para Trabalho Final**
+
+### **🎯 Fluxo Completo:**
+```bash
+# 1. Configuração inicial
+./scripts/aws-config.sh
+
+# 2. Deploy da solução completa
+./scripts/deploy.sh
+
+# 3. Testes de infraestrutura
+./scripts/test-eks-academy.sh
+
+# 4. Testes de carga
+./load-tests/run-all-tests.sh
+
+# 5. Limpeza (IMPORTANTE para evitar custos!)
+./scripts/destroy.sh
+```
+
+### **📋 Scripts Essenciais:**
+- ✅ **aws-config.sh** - Configuração AWS
+- ✅ **deploy.sh** - Deploy EKS + Aplicação  
+- ✅ **deploy-from-ecr.sh** - Deploy apenas aplicação
+- ✅ **test-eks-academy.sh** - Testes infraestrutura
+- ✅ **run-all-tests.sh** - Testes de carga
+- ✅ **destroy.sh** - Limpeza controlada
+- ✅ **force-destroy.sh** - Limpeza emergência
+
+**📂 Scripts redundantes movidos para `scripts/archived/`**
 
 ## 🧪 **CI/CD Pipeline**
 - **Trigger:** Push na `main` ou PR

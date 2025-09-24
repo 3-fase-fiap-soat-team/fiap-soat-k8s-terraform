@@ -58,3 +58,7 @@ local/
 tmp/
 fiap-soat-nestjs-app.tar.gz
 fiap-soat-nestjs-app.tar.gz
+
+# Scripts arquivados (redundantes)
+scripts/archived/
+
