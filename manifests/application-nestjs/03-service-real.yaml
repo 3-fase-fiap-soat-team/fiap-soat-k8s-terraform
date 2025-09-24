@@ -1,0 +1,24 @@
+# FIAP SOAT - Real NestJS Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: fiap-soat-nestjs-real-service
+  namespace: fiap-soat-app
+  labels:
+    app: fiap-soat-nestjs-real
+    component: backend
+    source: dockerhub
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+    service.beta.kubernetes.io/aws-load-balancer-attributes: "load_balancing.cross_zone.enabled=true"
+spec:
+  type: LoadBalancer
+  selector:
+    app: fiap-soat-nestjs-real
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  sessionAffinity: None

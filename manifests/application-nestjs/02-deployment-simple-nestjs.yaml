@@ -1,0 +1,56 @@
+# FIAP SOAT - NestJS Application Deployment (SIMPLE VERSION)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fiap-soat-nestjs
+  namespace: fiap-soat-app
+  labels:
+    app: fiap-soat-nestjs
+    version: v1
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fiap-soat-nestjs
+  template:
+    metadata:
+      labels:
+        app: fiap-soat-nestjs
+        version: v1
+        component: backend
+    spec:
+      containers:
+      - name: fiap-soat-nestjs
+        image: fiap-soat/nestjs-app:latest
+        imagePullPolicy: Never
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        # Environment variables básicas para o demo
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: DB_HOST
+          value: "postgres"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_USERNAME
+          value: "postgres"
+        - name: DB_PASSWORD
+          value: "postgres"
+        - name: DB_DATABASE
+          value: "soat_tech_challenge"
+        - name: JWT_SECRET
+          value: "demo-secret-key"
+        # Resources básicos
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"

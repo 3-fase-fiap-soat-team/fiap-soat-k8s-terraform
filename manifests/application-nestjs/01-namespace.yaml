@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fiap-soat-app
+  labels:
+    name: fiap-soat-app
+    project: fiap-soat-fase3
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fiap-soat-nestjs
+  namespace: fiap-soat-app
+  labels:
+    app: fiap-soat-nestjs
+    project: fiap-soat-fase3
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fiap-soat-nestjs-config
+  namespace: fiap-soat-app
+  labels:
+    app: fiap-soat-nestjs
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  AWS_REGION: "us-east-1"
+  JWT_EXPIRES_IN: "1h"
+  # Database será configurado via secrets
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fiap-soat-nestjs-secrets
+  namespace: fiap-soat-app
+  labels:
+    app: fiap-soat-nestjs
+type: Opaque
+data:
+  # Valores base64 encoded - configurar em produção
+  DB_HOST: ZmlhcC1zb2F0LXBvc3RncmVzLmNsdXN0ZXIteHl6LnVzLWVhc3QtMS5yZHMuYW1hem9uYXdzLmNvbQ==
+  DB_PORT: NTQzMg==
+  DB_USERNAME: ZmlhcHNvYXQ=
+  DB_PASSWORD: cGFzc3dvcmQtdG8tYmUtY2hhbmdlZA==
+  DB_DATABASE: ZmlhcHNvYXQ=
+  JWT_SECRET: c3VwZXItc2VjcmV0LWtleS10by1iZS1jaGFuZ2Vk
+  COGNITO_USER_POOL_ID: dXMtZWFzdC0xX1hZWg==
+  COGNITO_CLIENT_ID: YWJjMTIz

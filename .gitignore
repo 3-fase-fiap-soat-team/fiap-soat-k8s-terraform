@@ -56,3 +56,5 @@ secrets/
 *.backup
 local/
 tmp/
+fiap-soat-nestjs-app.tar.gz
+fiap-soat-nestjs-app.tar.gz
