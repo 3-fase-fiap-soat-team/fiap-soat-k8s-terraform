@@ -34,8 +34,8 @@ output "private_subnet_cidrs" {
 }
 
 output "availability_zones" {
-  description = "Availability Zones utilizadas"
-  value       = data.aws_availability_zones.available.names
+  description = "List of availability zones used"
+  value       = local.availability_zones
 }
 
 output "nat_gateway_id" {

@@ -27,11 +27,7 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Data source para AZs disponíveis
-data "aws_availability_zones" "available" {
-  state = "available"
-  filter {
-    name   = "zone-type"
-    values = ["availability-zone"]
-  }
+# Zones fixas para AWS Academy (us-east-1)
+locals {
+  availability_zones = ["us-east-1a", "us-east-1b"]
 }

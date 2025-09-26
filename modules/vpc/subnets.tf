@@ -2,12 +2,13 @@
 # Configuração mínima para economia de custos
 
 # Public Subnets (para Load Balancers e NAT se necessário)
+# Subnets públicas
 resource "aws_subnet" "public" {
-  count = min(length(data.aws_availability_zones.available.names), 2) # Máximo 2 AZs para economia
+  count = length(local.availability_zones) # Usar zonas fixas
 
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  cidr_block              = "10.0.${count.index + 1}.0/24"
+  availability_zone       = local.availability_zones[count.index]
   map_public_ip_on_launch = true
 
   tags = {
@@ -22,12 +23,13 @@ resource "aws_subnet" "public" {
 }
 
 # Private Subnets (para EKS nodes)
+# Subnets privadas
 resource "aws_subnet" "private" {
-  count = min(length(data.aws_availability_zones.available.names), 2) # Máximo 2 AZs para economia
+  count = length(local.availability_zones) # Usar zonas fixas
 
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10) # Offset para evitar conflito
-  availability_zone = data.aws_availability_zones.available.names[count.index]
+  cidr_block        = "10.0.${count.index + 10}.0/24"
+  availability_zone = local.availability_zones[count.index]
 
   tags = {
     Name        = "${var.project_name}-private-${count.index + 1}"

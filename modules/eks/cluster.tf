@@ -30,6 +30,13 @@ resource "aws_eks_cluster" "main" {
   # Enable control plane logging (optional, can be disabled to save costs)
   enabled_cluster_log_types = []
 
+  # Timeout configuration for EKS cluster creation/updates
+  timeouts {
+    create = "30m"  # EKS cluster can take up to 20-25 minutes to create
+    update = "60m"
+    delete = "15m"
+  }
+
   tags = merge(var.tags, {
     Name = var.cluster_name
   })
@@ -217,6 +224,13 @@ resource "aws_eks_node_group" "general" {
 
   update_config {
     max_unavailable = 1
+  }
+
+  # Timeout configuration for node group creation
+  timeouts {
+    create = "20m"  # Node groups typically take 10-15 minutes
+    update = "20m"
+    delete = "20m"
   }
 
   # Node group labels
