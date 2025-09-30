@@ -1,14 +1,26 @@
-# FIAP SOAT - Kubernetes Infrastructure ✅ AWS Academy Ready
+# 🚀 FIAP SOAT - EKS Kubernetes Terraform
 
-Terraform para EKS - Fase 3 **[VERSÃO 1.0 - TESTADA E FUNCIONANDO]**
+## 📊 Status: ✅ PRONTO PARA PRODUÇÃO
 
-## 🎯 **Objetivo**
-Provisionar cluster EKS (Kubernetes) na AWS usando Terraform, **totalmente compatível com AWS Academy** e otimizado para budget de $50 USD.
+**Data de Update**: 30 de Setembro de 2025  
+**Branch**: feature/networking-vpc  
+**Aplicação NestJS**: ✅ Funcionando no EKS
 
-## 🏆 **STATUS: CONFIGURAÇÃO VALIDADA** ✅
-- ✅ **Terraform validation:** PASSOU
-- ✅ **EKS Cluster:** Criado com sucesso usando roles AWS Academy
-- ✅ **AWS Academy Compatibility:** 100% funcional
+---
+
+## 🎯 **O que funciona AGORA**
+
+### ✅ Infraestrutura EKS
+- **Cluster EKS**: v1.28 funcional
+- **Worker Nodes**: t3.small (1 node)
+- **Networking**: VPC + Subnets + Security Groups
+- **LoadBalancer**: AWS ELB automático
+
+### ✅ Aplicação NestJS 
+- **Imagem ECR**: Uploadada e funcionando
+- **Deployment**: Limpo e organizado
+- **Service**: LoadBalancer expondo porta 80→3000
+- **Health Checks**: Endpoints `/` e `/health`
 - ✅ **Budget Optimization:** Configurado para $50 USD
 - ✅ **Scripts de teste:** Prontos e funcionando
 - ✅ **Aplicação:** Manifests prontos para deploy

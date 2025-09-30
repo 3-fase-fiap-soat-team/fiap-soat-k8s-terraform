@@ -1,7 +1,9 @@
-# ✅ FIAP SOAT - Aplicação EKS Deployada com Sucesso
+# 🚀 FIAP SOAT - Deployment NestJS no EKS - SUCESSO COMPLETO
 
-## 🎯 Status do Deploy
-**✅ APLICAÇÃO FUNCIONANDO NO EKS**
+## 📊 Status Final: ✅ APLICAÇÃO FUNCIONANDO
+
+**DATA ATUALIZAÇÃO**: 29 de Setembro de 2025 - 23:40 BRT  
+**STATUS**: ✅ APLICAÇÃO NESTJS FUNCIONANDO VIA LOADBALANCER
 
 ### 🌐 Acesso à Aplicação
 - **URL Externa**: http://aceb78fa8084e45afbbd4782ad7683b8-f41507c5845b5427.elb.us-east-1.amazonaws.com

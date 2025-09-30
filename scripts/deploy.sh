@@ -18,11 +18,16 @@ NC='\033[0m' # No Color
 # Configurações
 CLUSTER_NAME="fiap-soat-cluster"
 AWS_REGION="us-east-1"
+ACCOUNT_ID="280273007505"
+ECR_REPOSITORY="fiap-soat-nestjs-app"
+IMAGE_TAG="latest"
+APP_NAMESPACE="fiap-soat-app"
 
 # Detectar diretório base do projeto
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 TERRAFORM_DIR="$PROJECT_DIR/environments/dev"
+MANIFESTS_DIR="$PROJECT_DIR/manifests"
 
 MAX_RETRIES=3
 CREDENTIAL_CHECK_INTERVAL=300 # 5 minutos
@@ -351,13 +356,23 @@ wait_for_cluster_ready() {
 cleanup_application() {
     log "🧹 Removendo aplicação do Kubernetes..."
     
-    if kubectl get namespace fiap-soat >/dev/null 2>&1; then
-        kubectl delete -f manifests/application/ --ignore-not-found=true || true
-        kubectl delete -f manifests/application-nestjs/ --ignore-not-found=true || true
-        kubectl delete namespace fiap-soat --ignore-not-found=true || true
-        success "Aplicação removida"
+    if kubectl get namespace $APP_NAMESPACE >/dev/null 2>&1; then
+        # Remover todos os recursos do namespace
+        kubectl delete all --all -n $APP_NAMESPACE --ignore-not-found=true || true
+        
+        # Remover secrets específicos
+        kubectl delete secret ecr-secret -n $APP_NAMESPACE --ignore-not-found=true || true
+        
+        # Aguardar remoção completa dos recursos
+        log "Aguardando remoção dos recursos..."
+        sleep 10
+        
+        # Forçar remoção do namespace se ainda existir
+        kubectl delete namespace $APP_NAMESPACE --ignore-not-found=true || true
+        
+        success "Aplicação removida completamente"
     else
-        info "Namespace 'fiap-soat' não encontrado"
+        info "Namespace '$APP_NAMESPACE' não encontrado"
     fi
 }
 
@@ -820,19 +835,157 @@ configure_kubectl() {
     kubectl get nodes || warn "Falha ao conectar com o cluster"
 }
 
+# Configurar acesso ao ECR
+setup_ecr_access() {
+    log "Configurando secret para ECR..."
+    
+    # Remover secret existente se houver
+    kubectl delete secret ecr-secret -n $APP_NAMESPACE --ignore-not-found=true
+    
+    # Obter token do ECR
+    local ecr_token=$(aws ecr get-login-password --region $AWS_REGION)
+    
+    # Criar novo secret
+    kubectl create secret docker-registry ecr-secret \
+        --docker-server=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com \
+        --docker-username=AWS \
+        --docker-password="$ecr_token" \
+        --namespace=$APP_NAMESPACE
+    
+    success "Secret ECR configurado"
+}
+
+# Obter informações da aplicação
+get_application_info() {
+    log "Obtendo informações da aplicação..."
+    
+    local load_balancer=""
+    local max_attempts=10
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        load_balancer=$(kubectl get service fiap-soat-nestjs-service -n $APP_NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+        
+        if [ -n "$load_balancer" ]; then
+            break
+        fi
+        
+        info "Aguardando LoadBalancer (tentativa $attempt/$max_attempts)..."
+        sleep 15
+        attempt=$((attempt + 1))
+    done
+    
+    echo
+    echo -e "${GREEN}=====================================${NC}"
+    echo -e "${GREEN}🎉 APLICAÇÃO DEPLOYADA COM SUCESSO!${NC}"
+    echo -e "${GREEN}=====================================${NC}"
+    echo
+    echo -e "${BLUE}📊 Informações da Aplicação:${NC}"
+    echo "   Namespace: $APP_NAMESPACE"
+    echo "   Deployment: fiap-soat-nestjs"
+    echo "   Service: fiap-soat-nestjs-service"
+    echo "   Imagem: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG"
+    
+    if [ -n "$load_balancer" ]; then
+        echo
+        echo -e "${CYAN}🌍 URLs da Aplicação:${NC}"
+        echo "   Principal: http://$load_balancer/"
+        echo "   Health: http://$load_balancer/health"
+        echo
+        echo -e "${YELLOW}🧪 Testando aplicação...${NC}"
+        if curl -s -f "http://$load_balancer/health" >/dev/null; then
+            success "✅ Aplicação respondendo corretamente!"
+        else
+            warn "⚠️  Aguarde alguns minutos para a aplicação ficar completamente disponível"
+        fi
+    else
+        warn "LoadBalancer ainda não disponível. Use: kubectl get svc -n $APP_NAMESPACE"
+    fi
+    
+    echo
+    echo -e "${BLUE}🔍 Comandos úteis:${NC}"
+    echo "   kubectl get pods -n $APP_NAMESPACE"
+    echo "   kubectl logs -l app=fiap-soat-nestjs -n $APP_NAMESPACE"
+    echo "   kubectl describe service fiap-soat-nestjs-service -n $APP_NAMESPACE"
+}
+
 # Deploy da aplicação
 deploy_application() {
-    log "🚀 Fazendo deploy da aplicação..."
+    log "🚀 Fazendo deploy da aplicação NestJS..."
     
-    # Aplicar manifests
-    log "Aplicando manifests Kubernetes..."
-    kubectl apply -f manifests/application/
+    verify_credentials
+    
+    # Verificar se a imagem ECR existe
+    log "Verificando imagem no ECR..."
+    if ! aws ecr describe-images --region $AWS_REGION --repository-name $ECR_REPOSITORY --image-ids imageTag=$IMAGE_TAG &>/dev/null; then
+        error "Imagem $ECR_REPOSITORY:$IMAGE_TAG não encontrada no ECR!"
+    fi
+    success "Imagem ECR verificada"
+    
+    # Aplicar namespace
+    log "Aplicando namespace..."
+    kubectl apply -f $MANIFESTS_DIR/namespace.yaml
+    
+    # Criar/atualizar secret ECR
+    log "Configurando acesso ao ECR..."
+    setup_ecr_access
+    
+    # Aplicar deployment e service
+    log "Aplicando manifests da aplicação..."
+    kubectl apply -f $MANIFESTS_DIR/deployment.yaml
+    kubectl apply -f $MANIFESTS_DIR/service.yaml
     
     # Aguardar deployment
     log "Aguardando deployment ficar pronto..."
-    kubectl wait --for=condition=available --timeout=300s deployment/fiap-soat-app -n fiap-soat
+    kubectl wait --for=condition=available --timeout=300s deployment/fiap-soat-nestjs -n $APP_NAMESPACE
     
-    log "✅ Aplicação deployada com sucesso!"
+    # Aguardar LoadBalancer
+    log "Aguardando LoadBalancer ficar disponível..."
+    sleep 30  # Dar tempo para o LoadBalancer provisionar
+    
+    # Obter informações do serviço
+    get_application_info
+    
+    success "✅ Aplicação NestJS deployada com sucesso!"
+}
+
+# Verificar apenas status da aplicação
+check_application_status() {
+    log "📊 Verificando status da aplicação..."
+    
+    if ! kubectl get namespace $APP_NAMESPACE >/dev/null 2>&1; then
+        warn "Namespace '$APP_NAMESPACE' não encontrado. Aplicação não está deployada."
+        return 1
+    fi
+    
+    echo
+    echo -e "${BLUE}=== 📦 FIAP SOAT NESTJS APP ===${NC}"
+    kubectl get all -n $APP_NAMESPACE 2>/dev/null || echo "❌ Erro ao obter recursos da aplicação"
+    
+    echo
+    echo -e "${BLUE}=== 🔍 LOGS RECENTES ===${NC}"
+    kubectl logs -l app=fiap-soat-nestjs -n $APP_NAMESPACE --tail=10 2>/dev/null || echo "❌ Erro ao obter logs"
+    
+    echo
+    echo -e "${BLUE}=== 🌍 ACCESS INFO ===${NC}"
+    local load_balancer=$(kubectl get service fiap-soat-nestjs-service -n $APP_NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+    
+    if [ -n "$load_balancer" ]; then
+        echo "   🔗 Aplicação: http://$load_balancer/"
+        echo "   ❤️ Health: http://$load_balancer/health"
+        
+        echo
+        echo -e "${YELLOW}🧪 Testando conectividade...${NC}"
+        if curl -s -f "http://$load_balancer/health" >/dev/null 2>&1; then
+            success "✅ Aplicação FUNCIONANDO!"
+        else
+            warn "⚠️  Aplicação não está respondendo"
+        fi
+    else
+        warn "LoadBalancer não disponível ou ainda sendo provisionado"
+    fi
+    
+    success "Verificação da aplicação concluída!"
 }
 
 # Verificar status
@@ -885,25 +1038,32 @@ check_status() {
         kubectl get svc -A 2>/dev/null || echo "❌ Erro ao obter serviços"
         
         # Verificar se aplicação está deployada
-        if kubectl get namespace fiap-soat >/dev/null 2>&1; then
+        if kubectl get namespace $APP_NAMESPACE >/dev/null 2>&1; then
             echo
-            echo -e "${BLUE}=== 📦 FIAP SOAT APP ===${NC}"
-            kubectl get all -n fiap-soat 2>/dev/null || echo "❌ Erro ao obter recursos da aplicação"
+            echo -e "${BLUE}=== 📦 FIAP SOAT NESTJS APP ===${NC}"
+            kubectl get all -n $APP_NAMESPACE 2>/dev/null || echo "❌ Erro ao obter recursos da aplicação"
             
             echo
             echo -e "${BLUE}=== 🌐 ACCESS INFO ===${NC}"
-            local node_ip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}' 2>/dev/null)
-            if [ -z "$node_ip" ]; then
-                node_ip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)
-            fi
+            local load_balancer=$(kubectl get service fiap-soat-nestjs-service -n $APP_NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
             
-            if [ -n "$node_ip" ]; then
+            if [ -n "$load_balancer" ]; then
                 echo "Aplicação disponível em:"
-                echo "  🔗 NodePort: http://$node_ip:30080"
-                echo "  🔗 Port-forward: kubectl port-forward svc/fiap-soat-app 3000:80 -n fiap-soat"
+                echo "  🔗 Principal: http://$load_balancer/"
+                echo "  ❤️ Health: http://$load_balancer/health"
+                
+                echo
+                echo -e "${YELLOW}🧪 Testando conectividade...${NC}"
+                if curl -s -f "http://$load_balancer/health" >/dev/null 2>&1; then
+                    success "✅ Aplicação FUNCIONANDO!"
+                else
+                    warn "⚠️  Aplicação pode ainda estar inicializando"
+                fi
+            else
+                warn "LoadBalancer ainda não disponível"
             fi
         else
-            warn "Namespace 'fiap-soat' não encontrado. Aplicação não deployada?"
+            warn "Namespace '$APP_NAMESPACE' não encontrado. Aplicação não deployada?"
         fi
         
     else
@@ -939,16 +1099,29 @@ main() {
     check_aws_credentials
     
     echo
-    echo "Escolha uma opção:"
-    echo "1) 🚀 Deploy completo (infraestrutura + aplicação)"
-    echo "2) 🏗️  Apenas infraestrutura"
-    echo "3) 📦 Apenas aplicação"
-    echo "4) 📊 Verificar status"
-    echo "5) ⚙️  Configurar kubectl"
-    echo "6) 🔍 Verificar recursos AWS"
-    echo "7) 🧹 Limpeza completa (DESTROY ALL)"
-    echo "8) �️  Limpar recursos órfãos"
-    echo "9) �🔧 Limpeza apenas do state"
+    echo
+    echo "Escolha uma opcao:"
+    echo
+    echo -e "${CYAN}🏗️  INFRAESTRUTURA:${NC}"
+    echo "1) 🚀 Deploy completo (infraestrutura + aplicacao)"
+    echo "2) 🏗️  Apenas infraestrutura EKS"
+    echo "3) ⚙️  Configurar kubectl"
+    echo
+    echo -e "${CYAN}📦 APLICACAO NESTJS:${NC}"
+    echo "4) 📦 Deploy aplicacao NestJS"
+    echo "5) 🧹 Limpar aplicacao"
+    echo "6) 📊 Status aplicacao"
+    echo
+    echo -e "${CYAN}🔍 MONITORAMENTO:${NC}"
+    echo "7) 📊 Status completo (infra + app)"
+    echo "8) 🔍 Verificar recursos AWS"
+    echo
+    echo -e "${CYAN}🧹 LIMPEZA:${NC}"
+    echo "9) 🧹 Limpeza completa (DESTROY ALL)"
+    echo "10) 🛠️ Limpar recursos orfaos"
+    echo "11) 🔧 Limpar state Terraform"
+    echo
+    echo "0) 👋 Sair"
     echo "0) 👋 Sair"
     echo
     
@@ -967,26 +1140,31 @@ main() {
             ;;
         3)
             configure_kubectl
-            deploy_application
-            check_status
             ;;
         4)
             configure_kubectl
-            check_status
+            deploy_application
             ;;
         5)
-            configure_kubectl
+            cleanup_application
             ;;
         6)
-            check_aws_resources
+            check_application_status
             ;;
         7)
-            cleanup_resources
+            configure_kubectl
+            check_status
             ;;
         8)
-            cleanup_orphaned_resources
+            check_aws_resources
             ;;
         9)
+            cleanup_resources
+            ;;
+        10)
+            cleanup_orphaned_resources
+            ;;
+        11)
             clean_terraform_state
             ;;
         0)
