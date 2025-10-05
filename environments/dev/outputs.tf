@@ -1,32 +1,22 @@
-# === VPC Outputs (VPC Padrão AWS Academy) ===
+# === VPC Outputs (VPC do RDS - AWS Academy) ===
 output "vpc_id" {
-  description = "ID da VPC padrão (compatível com AWS Academy)"
-  value       = data.aws_vpc.default.id
-}
-
-output "vpc_cidr_block" {
-  description = "CIDR block da VPC"
-  value       = data.aws_vpc.default.cidr_block
+  description = "ID da VPC (obtida do RDS)"
+  value       = local.vpc_id
 }
 
 output "public_subnet_ids" {
-  description = "IDs das subnets públicas descobertas automaticamente"
+  description = "IDs das subnets públicas (do RDS)"
   value       = local.public_subnet_ids
 }
 
 output "private_subnet_ids" {
-  description = "IDs das subnets privadas descobertas automaticamente"
+  description = "IDs das subnets privadas (do RDS)"
   value       = local.private_subnet_ids
 }
 
-output "available_subnets" {
-  description = "Todas as subnets disponíveis na VPC"
-  value       = local.available_subnets
-}
-
-output "rds_fallback_subnets" {
-  description = "Subnets de fallback para compatibilidade com RDS"
-  value       = local.rds_subnet_ids
+output "rds_db_subnet_group" {
+  description = "Subnet group do RDS usado como referência"
+  value       = data.aws_db_subnet_group.existing.name
 }
 
 # === EKS Outputs ===

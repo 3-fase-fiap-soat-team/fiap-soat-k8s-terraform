@@ -13,11 +13,18 @@ build/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+!*.tfvars.rds-shared
+!*.tfvars.use-existing-sgs
 .terraform/
 .terraform.lock.hcl
 tfplan
+tfplan.json
 crash.log
 crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # Kubernetes
 kubeconfig
@@ -33,6 +40,11 @@ kubeconfig
 .idea/
 *.swp
 *.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-*
 
 # OS
 .DS_Store
@@ -54,9 +66,9 @@ secrets/
 *.tmp
 *.bak
 *.backup
+*.old
 local/
 tmp/
-fiap-soat-nestjs-app.tar.gz
 fiap-soat-nestjs-app.tar.gz
 
 # Scripts arquivados (redundantes)
