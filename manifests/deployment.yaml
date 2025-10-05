@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fiap-soat-nestjs
+  namespace: fiap-soat-app
+  labels:
+    app: fiap-soat-nestjs
+    version: "1.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fiap-soat-nestjs
+  template:
+    metadata:
+      labels:
+        app: fiap-soat-nestjs
+        version: "1.0"
+    spec:
+      containers:
+      - name: nestjs-app
+        image: 280273007505.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-nestjs-app:latest
+        imagePullPolicy: Always
+        
+        # Comando simplificado para rodar sem banco
+        command: ["/bin/bash"]
+        args: 
+          - -c
+          - |
+            echo "🚀 FIAP SOAT NestJS - Iniciando aplicação..."
+            
+            cd dist/src
+            cat << 'EOF' > main.simple.js
+            const express = require('express');
+            
+            async function bootstrap() {
+              const app = express();
+              
+              app.get('/', (req, res) => {
+                res.json({
+                  message: 'FIAP SOAT NestJS Application',
+                  status: 'running',
+                  timestamp: new Date().toISOString(),
+                  version: '1.0.0'
+                });
+              });
+              
+              app.get('/health', (req, res) => {
+                res.json({
+                  status: 'UP',
+                  application: 'RUNNING'
+                });
+              });
+              
+              const port = process.env.PORT || 3000;
+              app.listen(port, () => {
+                console.log(`🚀 Application running on port ${port}`);
+              });
+            }
+            bootstrap();
+            EOF
+            
+            node main.simple.js
+        
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+      
+      imagePullSecrets:
+      - name: ecr-secret

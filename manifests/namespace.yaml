@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fiap-soat-app
+  labels:
+    name: fiap-soat-app
+    project: fiap-soat-fase3
