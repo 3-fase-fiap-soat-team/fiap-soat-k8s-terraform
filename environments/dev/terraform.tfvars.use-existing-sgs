@@ -1,0 +1,78 @@
+# ==============================================================================
+# CONFIGURAÇÃO EKS - USANDO SECURITY GROUPS EXISTENTES
+# ==============================================================================
+# Este exemplo mostra como configurar o EKS para REUTILIZAR security groups
+# já existentes (ex: criados pelo RDS ou outra infraestrutura)
+#
+# IMPORTANTE: Use este approach quando você já tem SGs criados e quer compartilhar
+# ==============================================================================
+
+# Projeto
+project_name = "fiap-soat"
+environment  = "dev"
+
+# EKS Cluster
+cluster_name    = "fiap-soat-eks-dev"
+cluster_version = "1.30"
+
+# Região AWS
+aws_region = "us-east-1"
+
+# Node Groups Configuration
+node_groups = {
+  general = {
+    instance_types = ["t3.micro"]
+    capacity_type  = "ON_DEMAND"
+    min_size       = 1
+    max_size       = 3
+    desired_size   = 2
+  }
+}
+
+# Usar subnets públicas para nodes (economia de NAT Gateway)
+use_public_subnets_for_nodes = true
+
+# ==============================================================================
+# OPÇÃO 1: USAR SECURITY GROUPS EXISTENTES
+# ==============================================================================
+# Descomente as linhas abaixo e forneça os IDs dos SGs existentes:
+#
+# create_security_groups     = false
+# cluster_security_group_id  = "sg-0c96a913a76ab1367"  # SG do cluster existente
+# node_security_group_id     = "sg-0123456789abcdef0"  # SG dos nodes existente
+#
+# NOTA: Os security groups devem:
+# - Estar na mesma VPC que o EKS
+# - Permitir comunicação interna entre cluster e nodes
+# - Cluster SG: egress 443, 10250, 53 (TCP/UDP), 123 (UDP)
+# - Node SG: ingress de si mesmo, egress total, ingress 443 e 10250 do cluster
+
+# ==============================================================================
+# OPÇÃO 2: CRIAR NOVOS SECURITY GROUPS (PADRÃO)
+# ==============================================================================
+# Se você não especificar nada, o Terraform criará novos SGs automaticamente
+# com as regras necessárias para o EKS funcionar corretamente.
+#
+# Esta é a opção RECOMENDADA para novos deploys ou quando você quer
+# total isolamento entre recursos.
+
+# Add-ons do EKS
+cluster_addons = {
+  kube-proxy = {
+    version = "v1.27.6-eksbuild.2"
+  }
+  vpc-cni = {
+    version = "v1.15.4-eksbuild.1"
+  }
+  coredns = {
+    version = "v1.10.1-eksbuild.5"
+  }
+}
+
+# Tags
+tags = {
+  Project     = "fiap-soat-fase3"
+  Environment = "dev"
+  ManagedBy   = "terraform"
+  Team        = "devops"
+}
