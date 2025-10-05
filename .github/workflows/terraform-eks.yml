@@ -59,3 +59,35 @@ jobs:
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
+
+      - name: Configure kubectl
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_DEFAULT_REGION }} --name fiap-soat-eks-dev
+
+      - name: Deploy Kubernetes Manifests
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          cd ../../manifests
+          kubectl apply -f namespace.yaml
+          kubectl apply -f configmap.yaml
+          kubectl apply -f secret.yaml
+          kubectl apply -f deployment.yaml
+          kubectl apply -f service.yaml
+
+      - name: Wait for Deployment
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          kubectl rollout status deployment/fiap-soat-nestjs -n fiap-soat-app --timeout=5m
+
+      - name: Verify Pods
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "=== Pods Status ==="
+          kubectl get pods -n fiap-soat-app
+          echo ""
+          echo "=== Service Status ==="
+          kubectl get svc -n fiap-soat-app
+          echo ""
+          echo "=== Deployment Logs (last 50 lines) ==="
+          kubectl logs -n fiap-soat-app deployment/fiap-soat-nestjs --tail=50 || true
