@@ -13,6 +13,24 @@ data "aws_iam_role" "node_role" {
 # Data source for current AWS region
 data "aws_region" "current" {}
 
+# Data source para Security Group do cluster existente (se fornecido)
+data "aws_security_group" "cluster" {
+  count = var.create_security_groups ? 0 : 1
+  id    = var.cluster_security_group_id
+}
+
+# Data source para Security Group dos nodes existente (se fornecido)
+data "aws_security_group" "node_group" {
+  count = var.create_security_groups ? 0 : 1
+  id    = var.node_security_group_id
+}
+
+# Local para determinar qual SG usar (existente ou novo)
+locals {
+  cluster_sg_id   = var.create_security_groups ? aws_security_group.cluster[0].id : data.aws_security_group.cluster[0].id
+  node_group_sg_id = var.create_security_groups ? aws_security_group.node_group[0].id : data.aws_security_group.node_group[0].id
+}
+
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
@@ -24,7 +42,7 @@ resource "aws_eks_cluster" "main" {
     endpoint_private_access = true
     endpoint_public_access  = true
     public_access_cidrs     = ["0.0.0.0/0"]
-    security_group_ids      = [aws_security_group.cluster.id]
+    security_group_ids      = [local.cluster_sg_id]
   }
 
   # Enable control plane logging (optional, can be disabled to save costs)
@@ -42,12 +60,14 @@ resource "aws_eks_cluster" "main" {
   })
 
   depends_on = [
-    aws_security_group.cluster,
+    data.aws_iam_role.cluster_role
   ]
 }
 
-# Security Group for EKS Cluster
+# Security Group for EKS Cluster (criado apenas se create_security_groups = true)
 resource "aws_security_group" "cluster" {
+  count = var.create_security_groups ? 1 : 0
+  
   name_prefix = "${var.cluster_name}-cluster-"
   vpc_id      = var.vpc_id
 
@@ -94,8 +114,10 @@ resource "aws_security_group" "cluster" {
   })
 }
 
-# Security Group for Node Groups
+# Security Group for Node Groups (criado apenas se create_security_groups = true)
 resource "aws_security_group" "node_group" {
+  count = var.create_security_groups ? 1 : 0
+  
   name_prefix = "${var.cluster_name}-node-group-"
   vpc_id      = var.vpc_id
 
@@ -137,30 +159,36 @@ resource "aws_security_group" "node_group" {
 
 # Security Group Rules for communication between cluster and nodes
 resource "aws_security_group_rule" "cluster_ingress_node_https" {
+  count = var.create_security_groups ? 1 : 0
+  
   type                     = "ingress"
   from_port                = 443
   to_port                  = 443
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.node_group.id
-  security_group_id        = aws_security_group.cluster.id
+  source_security_group_id = local.node_group_sg_id
+  security_group_id        = local.cluster_sg_id
 }
 
 resource "aws_security_group_rule" "node_group_ingress_cluster_https" {
+  count = var.create_security_groups ? 1 : 0
+  
   type                     = "ingress"
   from_port                = 443
   to_port                  = 443
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.cluster.id
-  security_group_id        = aws_security_group.node_group.id
+  source_security_group_id = local.cluster_sg_id
+  security_group_id        = local.node_group_sg_id
 }
 
 resource "aws_security_group_rule" "node_group_ingress_cluster_kubelet" {
+  count = var.create_security_groups ? 1 : 0
+  
   type                     = "ingress"
   from_port                = 10250
   to_port                  = 10250
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.cluster.id
-  security_group_id        = aws_security_group.node_group.id
+  source_security_group_id = local.cluster_sg_id
+  security_group_id        = local.node_group_sg_id
 }
 
 # Launch Template for Node Groups
@@ -168,7 +196,7 @@ resource "aws_launch_template" "node_group" {
   name_prefix   = "${var.cluster_name}-node-group-"
   instance_type = var.node_groups.general.instance_types[0]
   
-  vpc_security_group_ids = [aws_security_group.node_group.id]
+  vpc_security_group_ids = [local.node_group_sg_id]
   
   # Sem user data - usar AMI otimizado do EKS padrão
   # user_data = base64encode(templatefile("${path.module}/userdata-simple.sh", {

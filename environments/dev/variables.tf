@@ -49,7 +49,7 @@ variable "enable_nat_gateway" {
 variable "use_public_subnets_for_nodes" {
   description = "Usar public subnets para nodes EKS (economia sem NAT Gateway)"
   type        = bool
-  default     = true  # Economia para AWS Academy
+  default     = true # Economia para AWS Academy
 }
 
 variable "node_groups" {
@@ -120,4 +120,26 @@ variable "tags" {
     CostCenter   = "education"
     AutoShutdown = "true"
   }
+}
+
+# ==============================================================================
+# SECURITY GROUPS - REUTILIZAR OU CRIAR
+# ==============================================================================
+
+variable "create_security_groups" {
+  description = "Se true, cria novos security groups. Se false, usa IDs existentes."
+  type        = bool
+  default     = true # Padrão: criar novos SGs
+}
+
+variable "cluster_security_group_id" {
+  description = "ID do Security Group existente para o cluster EKS (usado apenas se create_security_groups = false)"
+  type        = string
+  default     = null
+}
+
+variable "node_security_group_id" {
+  description = "ID do Security Group existente para os nodes EKS (usado apenas se create_security_groups = false)"
+  type        = string
+  default     = null
 }

@@ -73,7 +73,7 @@ output "cluster_primary_security_group_id" {
 
 output "node_security_group_id" {
   description = "ID do security group dos nodes"
-  value       = aws_security_group.node_group.id
+  value       = local.node_group_sg_id
 }
 
 # Output para kubectl config

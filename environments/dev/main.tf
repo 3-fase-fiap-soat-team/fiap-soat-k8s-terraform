@@ -47,7 +47,7 @@ data "aws_subnets" "available" {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
-  
+
   filter {
     name   = "state"
     values = ["available"]
@@ -58,18 +58,18 @@ data "aws_subnets" "available" {
 locals {
   # Descobrir subnets automaticamente ou usar fallback
   available_subnets = length(data.aws_subnets.available.ids) > 0 ? data.aws_subnets.available.ids : []
-  
+
   # Se não encontrar subnets, criar configuração básica
   subnet_count = length(local.available_subnets)
-  
+
   # Distribuir subnets: usar todas como públicas para simplicidade no AWS Academy
   public_subnet_ids  = local.subnet_count > 0 ? local.available_subnets : []
   private_subnet_ids = local.subnet_count > 2 ? slice(local.available_subnets, 1, local.subnet_count) : local.available_subnets
-  
+
   # Fallback para subnets conhecidas do RDS se necessário
   rds_subnet_ids = [
     "subnet-0c00fd754c4fe4305",
-    "subnet-0c5f846c7a41656d4", 
+    "subnet-0c5f846c7a41656d4",
     "subnet-05296f706c91a1df8",
     "subnet-0c534eacf07fde00c",
     "subnet-01cf476ef5fe31d92",
@@ -91,9 +91,14 @@ module "eks" {
   vpc_id             = data.aws_vpc.default.id
   private_subnet_ids = local.private_subnet_ids
   public_subnet_ids  = local.public_subnet_ids
-  
+
   # Configuração de subnets para nodes
   use_public_subnets_for_nodes = var.use_public_subnets_for_nodes
+
+  # Security Groups - Reutilizar ou criar
+  create_security_groups    = var.create_security_groups
+  cluster_security_group_id = var.cluster_security_group_id
+  node_security_group_id    = var.node_security_group_id
 
   # Node Groups
   node_groups = var.node_groups

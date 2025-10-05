@@ -96,3 +96,21 @@ variable "cluster_addons" {
     }
   }
 }
+
+variable "cluster_security_group_id" {
+  description = "ID do Security Group existente para o cluster EKS (opcional - se não fornecido, será criado um novo)"
+  type        = string
+  default     = null
+}
+
+variable "node_security_group_id" {
+  description = "ID do Security Group existente para os nodes EKS (opcional - se não fornecido, será criado um novo)"
+  type        = string
+  default     = null
+}
+
+variable "create_security_groups" {
+  description = "Se true, cria novos security groups. Se false, usa os IDs fornecidos nas variáveis."
+  type        = bool
+  default     = true
+}
