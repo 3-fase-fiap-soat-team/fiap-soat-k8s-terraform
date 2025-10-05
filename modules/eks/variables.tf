@@ -114,3 +114,15 @@ variable "create_security_groups" {
   type        = bool
   default     = true
 }
+
+variable "cluster_role_name" {
+  description = "Nome da IAM Role do cluster EKS (opcional - se não fornecido, busca automaticamente por LabEksClusterRole)"
+  type        = string
+  default     = null
+}
+
+variable "node_role_name" {
+  description = "Nome da IAM Role dos nodes EKS (opcional - se não fornecido, busca automaticamente por LabEksNodeRole)"
+  type        = string
+  default     = null
+}

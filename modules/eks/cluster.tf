@@ -1,13 +1,33 @@
 # EKS Cluster Configuration for AWS Academy
 # Uses pre-created IAM roles: LabEksClusterRole and LabEksNodeRole
 
-# Data sources to get existing IAM roles
+# Data sources para listar todas as roles e buscar as corretas
+data "aws_iam_roles" "all" {
+  name_regex = ".*Lab.*"
+}
+
+# Locals para encontrar as roles corretas dinamicamente
+locals {
+  # Buscar role do cluster (contém "LabEksClusterRole" no nome)
+  cluster_role_name = try(
+    [for role in data.aws_iam_roles.all.names : role if strcontains(role, "LabEksClusterRole")][0],
+    var.cluster_role_name != null ? var.cluster_role_name : ""
+  )
+  
+  # Buscar role dos nodes (contém "LabEksNodeRole" no nome)
+  node_role_name = try(
+    [for role in data.aws_iam_roles.all.names : role if strcontains(role, "LabEksNodeRole")][0],
+    var.node_role_name != null ? var.node_role_name : ""
+  )
+}
+
+# Data sources para obter detalhes das IAM roles descobertas
 data "aws_iam_role" "cluster_role" {
-  name = "c173096a4485959l11165982t1w280273-LabEksClusterRole-jiF0LvC4kZ5O"
+  name = local.cluster_role_name
 }
 
 data "aws_iam_role" "node_role" {
-  name = "c173096a4485959l11165982t1w280273007-LabEksNodeRole-3PRff1hjVZWU"
+  name = local.node_role_name
 }
 
 # Data source for current AWS region
