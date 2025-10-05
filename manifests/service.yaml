@@ -6,11 +6,12 @@ metadata:
   labels:
     app: fiap-soat-nestjs
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - name: http
     port: 80
     targetPort: 3000
     protocol: TCP
   selector:
+    app: fiap-soat-nestjs
     app: fiap-soat-nestjs
