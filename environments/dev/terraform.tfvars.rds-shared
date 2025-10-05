@@ -1,0 +1,56 @@
+# Configuração para usar VPC compartilhada com RDS
+# Baseado no fiap-soat-database-terraform/envs/dev/terraform.tfvars
+
+# VPC existente (mesma do RDS)
+existing_vpc_id = "vpc-0bc479b582e33b241"
+
+# Configurações do cluster
+cluster_name    = "fiap-soat-cluster"
+cluster_version = "1.27"
+project_name    = "fiap-soat"
+environment     = "dev"
+
+# Usar subnets públicas para economizar (sem NAT Gateway)
+use_public_subnets_for_nodes = true
+enable_nat_gateway          = false
+
+# Node group econômico para AWS Academy
+node_groups = {
+  general = {
+    instance_types = ["t3.micro"]
+    capacity_type  = "ON_DEMAND"
+    min_size       = 1
+    max_size       = 2
+    desired_size   = 1
+  }
+}
+
+# Add-ons essenciais (gratuitos)
+cluster_addons = {
+  kube-proxy = {
+    version = "v1.27.6-eksbuild.2"
+  }
+  vpc-cni = {
+    version = "v1.15.4-eksbuild.1" 
+  }
+  coredns = {
+    version = "v1.10.1-eksbuild.5"
+  }
+}
+
+# Acesso público para desenvolvimento (AWS Academy)
+endpoint_config = {
+  private_access      = true
+  public_access       = true
+  public_access_cidrs = ["0.0.0.0/0"]
+}
+
+# Tags organizacionais
+tags = {
+  Project      = "fiap-soat-fase3"
+  Owner        = "rs94458" 
+  Budget       = "aws-academy-50usd"
+  CostCenter   = "education"
+  AutoShutdown = "true"
+  SharedWith   = "rds-database"
+}

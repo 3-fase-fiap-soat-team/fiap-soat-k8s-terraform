@@ -1,0 +1,145 @@
+config:
+  target: 'http://{{ $processEnvironment.TARGET_URL || "localhost:3000" }}'
+  phases:
+    # Ramp up
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp up to normal load"
+    # Sustained load
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained load - 20 users/sec"
+    # Peak load
+    - duration: 120
+      arrivalRate: 30
+      name: "Peak load - 30 users/sec"
+    # Ramp down
+    - duration: 60
+      arrivalRate: 30
+      rampTo: 5
+      name: "Ramp down"
+      
+  defaults:
+    headers:
+      'Content-Type': 'application/json'
+      
+  variables:
+    cpf:
+      - "12345678901"
+      - "98765432100" 
+      - "11122233344"
+      - "55544433322"
+      - "99988877766"
+    customerData:
+      - name: "João Silva"
+        email: "joao@test.com"
+        cpf: "12345678901"
+      - name: "Maria Santos"
+        email: "maria@test.com" 
+        cpf: "98765432100"
+    productId:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+
+scenarios:
+  - name: "Health Check Flow"
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "Customer Journey - Browse Products"
+    weight: 35
+    flow:
+      - get:
+          url: "/products"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/products/{{ productId }}"
+          expect:
+            - statusCode: [200, 404]
+      - think: 2
+
+  - name: "Customer Journey - Auth & Profile"
+    weight: 25
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            cpf: "{{ cpf }}"
+          expect:
+            - statusCode: [200, 401]
+          capture:
+            json: "$.token"
+            as: "authToken"
+      - think: 1
+      - get:
+          url: "/auth/profile"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: [200, 401]
+
+  - name: "Order Creation Flow"
+    weight: 20
+    flow:
+      # Get products first
+      - get:
+          url: "/products"
+          expect:
+            - statusCode: 200
+      - think: 3
+      # Create order
+      - post:
+          url: "/orders"
+          json:
+            items:
+              - productId: "{{ productId }}"
+                quantity: 1
+            customerId: "123"
+          expect:
+            - statusCode: [200, 201, 400, 401]
+          capture:
+            json: "$.id"
+            as: "orderId"
+      - think: 1
+      # Check order status (if order was created)
+      - get:
+          url: "/orders/{{ orderId }}"
+          ifTrue: "orderId"
+          expect:
+            - statusCode: [200, 404, 401]
+
+  - name: "Customer Management"
+    weight: 10
+    flow:
+      - get:
+          url: "/customers"
+          expect:
+            - statusCode: [200, 401]
+      - post:
+          url: "/customers"
+          json:
+            name: "{{ customerData.name }}"
+            email: "{{ customerData.email }}"
+            cpf: "{{ customerData.cpf }}"
+          expect:
+            - statusCode: [201, 400, 409]
+
+before:
+  flow:
+    - log: "🚀 Iniciando teste de carga da aplicação FIAP SOAT"
+    - log: "🎯 Target: {{ $processEnvironment.TARGET_URL || 'localhost:3000' }}"
+    - log: "⏱️ Duração total: ~9 minutos"
+
+after:
+  flow:
+    - log: "✅ Teste de carga finalizado"
+    - log: "📊 Verifique os resultados para métricas de performance"
