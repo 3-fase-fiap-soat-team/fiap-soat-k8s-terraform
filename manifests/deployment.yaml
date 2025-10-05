@@ -7,7 +7,7 @@ metadata:
     app: fiap-soat-nestjs
     version: "1.0"
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: fiap-soat-nestjs
@@ -19,59 +19,37 @@ spec:
     spec:
       containers:
       - name: nestjs-app
-        image: 280273007505.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-nestjs-app:latest
+        image: 280273007505.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-nestjs-rds-app:latest
         imagePullPolicy: Always
-        
-        # Comando simplificado para rodar sem banco
-        command: ["/bin/bash"]
-        args: 
-          - -c
-          - |
-            echo "🚀 FIAP SOAT NestJS - Iniciando aplicação..."
-            
-            cd dist/src
-            cat << 'EOF' > main.simple.js
-            const express = require('express');
-            
-            async function bootstrap() {
-              const app = express();
-              
-              app.get('/', (req, res) => {
-                res.json({
-                  message: 'FIAP SOAT NestJS Application',
-                  status: 'running',
-                  timestamp: new Date().toISOString(),
-                  version: '1.0.0'
-                });
-              });
-              
-              app.get('/health', (req, res) => {
-                res.json({
-                  status: 'UP',
-                  application: 'RUNNING'
-                });
-              });
-              
-              const port = process.env.PORT || 3000;
-              app.listen(port, () => {
-                console.log(`🚀 Application running on port ${port}`);
-              });
-            }
-            bootstrap();
-            EOF
-            
-            node main.simple.js
         
         ports:
         - name: http
           containerPort: 3000
           protocol: TCP
         
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: PORT
-          value: "3000"
+        envFrom:
+        - configMapRef:
+            name: fiap-soat-config
+        - secretRef:
+            name: fiap-soat-secrets
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
         
         resources:
           requests:
@@ -80,6 +58,4 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "300m"
-      
-      imagePullSecrets:
       - name: ecr-secret

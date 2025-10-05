@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fiap-soat-config
+  namespace: fiap-soat-app
+  labels:
+    app: fiap-soat-nestjs
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  
+  # AWS Configuration
+  AWS_REGION: "us-east-1"
+  
+  # Database Configuration (RDS)
+  DATABASE_HOST: "fiap-soat-db.cfcimi4ia52v.us-east-1.rds.amazonaws.com"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "fiapdb_dev"
+  DATABASE_USERNAME: "postgresadmin"
+  DATABASE_SSL: "true"
