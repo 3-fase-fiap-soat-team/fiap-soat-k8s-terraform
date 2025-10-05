@@ -36,18 +36,45 @@ provider "aws" {
   }
 }
 
-# Módulo VPC
-module "vpc" {
-  source = "../../modules/vpc"
+# Strategy: Use default VPC (more reliable in AWS Academy)
+data "aws_vpc" "default" {
+  default = true
+}
 
-  project_name                 = var.project_name
-  environment                  = var.environment
-  vpc_cidr                     = var.vpc_cidr
-  cluster_name                 = var.cluster_name
-  enable_nat_gateway          = var.enable_nat_gateway
-  use_public_subnets_for_nodes = var.use_public_subnets_for_nodes
+# Data sources para subnets disponíveis na VPC padrão
+data "aws_subnets" "available" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+  
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
 
-  tags = var.tags
+# Configuração robusta de subnets para AWS Academy
+locals {
+  # Descobrir subnets automaticamente ou usar fallback
+  available_subnets = length(data.aws_subnets.available.ids) > 0 ? data.aws_subnets.available.ids : []
+  
+  # Se não encontrar subnets, criar configuração básica
+  subnet_count = length(local.available_subnets)
+  
+  # Distribuir subnets: usar todas como públicas para simplicidade no AWS Academy
+  public_subnet_ids  = local.subnet_count > 0 ? local.available_subnets : []
+  private_subnet_ids = local.subnet_count > 2 ? slice(local.available_subnets, 1, local.subnet_count) : local.available_subnets
+  
+  # Fallback para subnets conhecidas do RDS se necessário
+  rds_subnet_ids = [
+    "subnet-0c00fd754c4fe4305",
+    "subnet-0c5f846c7a41656d4", 
+    "subnet-05296f706c91a1df8",
+    "subnet-0c534eacf07fde00c",
+    "subnet-01cf476ef5fe31d92",
+    "subnet-0f7c2a12c4f68b254"
+  ]
 }
 
 # Módulo EKS
@@ -60,10 +87,10 @@ module "eks" {
   project_name    = var.project_name
   environment     = var.environment
 
-  # Rede
-  vpc_id             = module.vpc.vpc_id
-  private_subnet_ids = module.vpc.private_subnet_ids
-  public_subnet_ids  = module.vpc.public_subnet_ids
+  # Rede (VPC padrão - compatível com AWS Academy)
+  vpc_id             = data.aws_vpc.default.id
+  private_subnet_ids = local.private_subnet_ids
+  public_subnet_ids  = local.public_subnet_ids
   
   # Configuração de subnets para nodes
   use_public_subnets_for_nodes = var.use_public_subnets_for_nodes
@@ -80,5 +107,5 @@ module "eks" {
 
   tags = var.tags
 
-  depends_on = [module.vpc]
+  depends_on = [data.aws_vpc.default]
 }

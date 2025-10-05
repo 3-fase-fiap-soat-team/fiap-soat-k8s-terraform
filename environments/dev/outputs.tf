@@ -1,32 +1,32 @@
-# === VPC Outputs ===
+# === VPC Outputs (VPC Padrão AWS Academy) ===
 output "vpc_id" {
-  description = "ID da VPC criada"
-  value       = module.vpc.vpc_id
+  description = "ID da VPC padrão (compatível com AWS Academy)"
+  value       = data.aws_vpc.default.id
 }
 
 output "vpc_cidr_block" {
   description = "CIDR block da VPC"
-  value       = module.vpc.vpc_cidr_block
+  value       = data.aws_vpc.default.cidr_block
 }
 
 output "public_subnet_ids" {
-  description = "IDs das subnets públicas"
-  value       = module.vpc.public_subnet_ids
+  description = "IDs das subnets públicas descobertas automaticamente"
+  value       = local.public_subnet_ids
 }
 
 output "private_subnet_ids" {
-  description = "IDs das subnets privadas"
-  value       = module.vpc.private_subnet_ids
+  description = "IDs das subnets privadas descobertas automaticamente"
+  value       = local.private_subnet_ids
 }
 
-output "availability_zones" {
-  description = "Availability Zones utilizadas"
-  value       = module.vpc.availability_zones
+output "available_subnets" {
+  description = "Todas as subnets disponíveis na VPC"
+  value       = local.available_subnets
 }
 
-output "internet_gateway_id" {
-  description = "ID do Internet Gateway"
-  value       = module.vpc.internet_gateway_id
+output "rds_fallback_subnets" {
+  description = "Subnets de fallback para compatibilidade com RDS"
+  value       = local.rds_subnet_ids
 }
 
 # === EKS Outputs ===

@@ -16,10 +16,16 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block para VPC"
+variable "use_default_vpc" {
+  description = "Usar VPC padrão (mais confiável no AWS Academy)"
+  type        = bool
+  default     = true
+}
+
+variable "fallback_vpc_id" {
+  description = "ID da VPC de fallback (se VPC padrão não disponível)"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "vpc-0bc479b582e33b241" # VPC do RDS para compatibilidade
 }
 
 variable "cluster_name" {
