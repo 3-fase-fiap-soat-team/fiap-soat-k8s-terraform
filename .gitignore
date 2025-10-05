@@ -11,10 +11,6 @@ build/
 # Terraform
 *.tfstate
 *.tfstate.*
-*.tfvars
-!*.tfvars.example
-!*.tfvars.rds-shared
-!*.tfvars.use-existing-sgs
 .terraform/
 .terraform.lock.hcl
 tfplan
