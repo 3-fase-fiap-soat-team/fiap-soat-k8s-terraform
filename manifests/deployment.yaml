@@ -58,4 +58,3 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "300m"
-      - name: ecr-secret
