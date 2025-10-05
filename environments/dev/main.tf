@@ -48,6 +48,12 @@ data "aws_db_subnet_group" "existing" {
   name = data.aws_db_instance.existing.db_subnet_group
 }
 
+# Get subnet details to filter by availability zone
+data "aws_subnet" "rds_subnets" {
+  for_each = toset(data.aws_db_subnet_group.existing.subnet_ids)
+  id       = each.value
+}
+
 # Configuração robusta de subnets para AWS Academy
 locals {
   # Pegar VPC ID e subnets do RDS
@@ -56,13 +62,19 @@ locals {
   # Subnets do RDS subnet group
   rds_subnets = data.aws_db_subnet_group.existing.subnet_ids
   
-  # Usar todas as subnets do RDS para o EKS
-  # No AWS Academy, essas subnets já estão configuradas e funcionando
-  subnet_count = length(local.rds_subnets)
+  # CRITICAL: EKS não suporta us-east-1e
+  # Filtrar subnets para excluir us-east-1e (EKS unsupported AZ)
+  eks_supported_subnets = [
+    for subnet_id, subnet in data.aws_subnet.rds_subnets :
+    subnet_id if subnet.availability_zone != "us-east-1e"
+  ]
   
-  # Distribuir subnets: usar todas como públicas para simplicidade no AWS Academy
-  public_subnet_ids  = local.rds_subnets
-  private_subnet_ids = local.rds_subnets
+  # Validação: Garantir que temos pelo menos 2 subnets em AZs diferentes
+  subnet_count = length(local.eks_supported_subnets)
+  
+  # Distribuir subnets: usar subnets filtradas como públicas para simplicidade no AWS Academy
+  public_subnet_ids  = local.eks_supported_subnets
+  private_subnet_ids = local.eks_supported_subnets
 }
 
 # Módulo EKS
