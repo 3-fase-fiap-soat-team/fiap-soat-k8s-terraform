@@ -5,13 +5,14 @@ metadata:
   namespace: fiap-soat-app
   labels:
     app: fiap-soat-nestjs
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # Network Load Balancer (mais barato)
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
   - name: http
     port: 80
     targetPort: 3000
     protocol: TCP
   selector:
-    app: fiap-soat-nestjs
     app: fiap-soat-nestjs

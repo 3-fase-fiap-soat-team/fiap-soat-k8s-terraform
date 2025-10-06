@@ -1,948 +1,433 @@
-# 🚀 FIAP SOAT - Infraestrutura EKS Kubernetes# 🚀 FIAP SOAT - EKS Kubernetes Infrastructure# 🚀 FIAP SOAT - EKS Kubernetes Terraform
+# 🚀 FIAP SOAT - Sistema de Fast Food
 
+**Infraestrutura como Código para Kubernetes na AWS**
 
+[![Terraform](https://img.shields.io/badge/Terraform-1.0+-623CE4?logo=terraform)](https://www.terraform.io/)
+[![AWS EKS](https://img.shields.io/badge/AWS-EKS-FF9900?logo=amazon-aws)](https://aws.amazon.com/eks/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-1.30-326CE5?logo=kubernetes)](https://kubernetes.io/)
 
-Infraestrutura como Código (IaC) para provisionamento de cluster EKS na AWS usando Terraform, otimizado para AWS Academy.
-
-
-
-> 📖 **English version:** [README.en.md](README.en.md)Infraestrutura como Código (IaC) para provisionamento de cluster EKS na AWS usando Terraform, otimizado para AWS Academy.## 📊 Status: ✅ PRONTO PARA PRODUÇÃO
-
-
+---
 
 ## 📋 Índice
 
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Arquitetura](#-arquitetura)
+- [Stack Tecnológica](#-stack-tecnológica)
+- [Pré-requisitos](#-pré-requisitos)
+- [Como Deployar](#-como-deployar)
+- [Estrutura do Repositório](#-estrutura-do-repositório)
+- [Comandos Úteis](#-comandos-úteis)
+- [Branches e Repositórios](#-branches-e-repositórios)
+- [Equipe](#-equipe)
 
+---
 
-- [Sobre o Projeto](#sobre-o-projeto)## 📋 Índice**Data de Update**: 30 de Setembro de 2025  
+## 📖 Sobre o Projeto
 
-- [Arquitetura](#arquitetura)
+Este projeto implementa a **infraestrutura completa de um sistema de fast food** utilizando:
 
-- [Pré-requisitos](#pré-requisitos)**Branch**: feature/networking-vpc  
+- **Amazon EKS (Elastic Kubernetes Service)** para orquestração de containers
+- **Terraform** para provisionamento de infraestrutura como código
+- **AWS RDS PostgreSQL** para persistência de dados
+- **AWS Lambda + API Gateway + Cognito** para autenticação serverless
+- **Network Load Balancer** para exposição da aplicação NestJS
 
-- [Início Rápido](#início-rápido)
+O projeto foi desenvolvido como parte do curso **FIAP SOAT - Fase 3**, com foco em:
+- Arquitetura de microsserviços
+- Clean Architecture
+- CI/CD automatizado
+- Otimização de custos para AWS Academy ($50 USD budget)
 
-- [Estrutura do Projeto](#estrutura-do-projeto)- [Sobre o Projeto](#sobre-o-projeto)**Aplicação NestJS**: ✅ Funcionando no EKS
-
-- [Documentação](#documentação)
-
-- [Scripts Úteis](#scripts-úteis)- [Arquitetura](#arquitetura)
-
-- [CI/CD](#cicd)
-
-- [Troubleshooting](#troubleshooting)- [Pré-requisitos](#pré-requisitos)---
-
-
-
-## 🎯 Sobre o Projeto- [Quick Start](#quick-start)
-
-
-
-Este repositório contém a infraestrutura Terraform para provisionamento de um cluster Amazon EKS (Elastic Kubernetes Service) otimizado para AWS Academy, com as seguintes características:- [Estrutura do Projeto](#estrutura-do-projeto)## 🎯 **O que funciona AGORA**
-
-
-
-- **Auto-discovery** de VPC, IAM Roles e Subnets via RDS existente- [Documentação](#documentação)
-
-- **Security Groups** configuráveis (criar novos ou reutilizar existentes)
-
-- **GitHub Actions** para CI/CD automatizado- [Scripts Úteis](#scripts-úteis)### ✅ Infraestrutura EKS
-
-- **AWS Academy compliant** - funciona com as características do AWS Academy Learner Lab
-
-- **Cost-optimized** - configuração econômica com nodes t3.micro- [CI/CD](#cicd)- **Cluster EKS**: v1.28 funcional
-
-
-
-### ✨ Funcionalidades- [Troubleshooting](#troubleshooting)- **Worker Nodes**: t3.small (1 node)
-
-
-
-- ✅ Auto-discovery de VPC e Subnets através de RDS existente- **Networking**: VPC + Subnets + Security Groups
-
-- ✅ Auto-discovery de IAM Roles (LabEksClusterRole, LabEksNodeRole)
-
-- ✅ Security Groups flexíveis (criação automática ou reutilização)## 🎯 Sobre o Projeto- **LoadBalancer**: AWS ELB automático
-
-- ✅ EKS Cluster v1.27 com 3 add-ons essenciais
-
-- ✅ Node Groups configuráveis (min/max/desired size)
-
-- ✅ IRSA (IAM Roles for Service Accounts) habilitado
-
-- ✅ Scripts de deploy e manutenção automatizadosEste repositório contém a infraestrutura Terraform para provisionamento de um cluster Amazon EKS (Elastic Kubernetes Service) otimizado para AWS Academy, com as seguintes características:### ✅ Aplicação NestJS 
-
-- ✅ Testes de carga com Artillery e K6
-
-- **Imagem ECR**: Uploadada e funcionando
+---
 
 ## 🏗️ Arquitetura
 
-- **Auto-discovery** de VPC, IAM Roles e Subnets via RDS existente- **Deployment**: Limpo e organizado
-
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        AWS Cloud (us-east-1)                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  API Gateway (REST API)                                        │  │
+│  │  ├─ POST /signup  → Lambda fastfoodSignup                     │  │
+│  │  └─ POST /auth    → Lambda fastfoodAuth                       │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                          ↓                                          │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  AWS Cognito User Pool (fastfood-users)                       │  │
+│  │  └─ Custom Attribute: CPF                                     │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                          ↓                                          │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  Network Load Balancer (NLB)                                  │  │
+│  │  └─ Port 80 → EKS Service (fiap-soat-nestjs-service)         │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                          ↓                                          │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  EKS Cluster (fiap-soat-eks-dev) - Kubernetes 1.30           │  │
+│  │  ├─ Namespace: fiap-soat-app                                  │  │
+│  │  ├─ Deployment: fiap-soat-nestjs (1 replica)                 │  │
+│  │  ├─ Service: LoadBalancer tipo NLB                            │  │
+│  │  └─ ConfigMap + Secrets                                       │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                          ↓                                          │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  RDS PostgreSQL 17.4 (fiap-soat-db)                          │  │
+│  │  ├─ Instância: db.t3.micro                                    │  │
+│  │  ├─ Storage: 20 GB gp3                                        │  │
+│  │  └─ VPC: vpc-0b339aae01a928665                               │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                      │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  VPC & Networking (Auto-discovered via RDS)                   │  │
+│  │  ├─ 6 Subnets (3 públicas, 3 privadas)                       │  │
+│  │  ├─ Security Groups (EKS Cluster + Nodes + RDS)              │  │
+│  │  └─ IAM Roles: LabEksClusterRole, LabEksNodeRole             │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-┌─────────────────────────────────────────────────────────────┐- **Security Groups** configuráveis (criar novos ou reutilizar existentes)- **Service**: LoadBalancer expondo porta 80→3000
+### Fluxo de Autenticação
 
-│                    Conta AWS Academy                         │
+1. Cliente → **API Gateway** (`/signup` ou `/auth`)
+2. **Lambda** processa requisição
+3. **Lambda** cria/valida usuário no **NestJS** via **Load Balancer**
+4. **NestJS** persiste dados no **RDS PostgreSQL**
+5. **Lambda** cria/valida usuário no **Cognito**
+6. **Lambda** gera **JWT token** e retorna ao cliente
 
-├─────────────────────────────────────────────────────────────┤- **GitHub Actions** para CI/CD automatizado- **Health Checks**: Endpoints `/` e `/health`
+---
 
-│                                                              │
+## 🛠️ Stack Tecnológica
 
-│  ┌──────────────────────────────────────────────────────┐  │- **AWS Academy compliant** - funciona com limitações do AWS Academy Learner Lab- ✅ **Budget Optimization:** Configurado para $50 USD
+### Infraestrutura
+- **Terraform** (v1.0+) - Infrastructure as Code
+- **AWS EKS** (v1.30) - Kubernetes gerenciado
+- **AWS RDS** (PostgreSQL 17.4) - Banco de dados relacional
+- **AWS Lambda** (Node.js 20.x) - Funções serverless
+- **AWS API Gateway** - REST API
+- **AWS Cognito** - Gerenciamento de identidades
+- **AWS NLB** - Network Load Balancer
 
-│  │  VPC (descoberta via RDS)                            │  │
+### Aplicação
+- **NestJS** - Framework Node.js com Clean Architecture
+- **TypeScript** - Linguagem principal
+- **Docker** - Containerização
+- **Kubernetes** - Orquestração de containers
 
-│  │  ├─ 6 Subnets (públicas/privadas)                    │  │- **Cost-optimized** - configuração econômica com t3.micro nodes- ✅ **Scripts de teste:** Prontos e funcionando
+### DevOps
+- **GitHub Actions** - CI/CD
+- **kubectl** - CLI do Kubernetes
+- **AWS CLI** - CLI da AWS
+- **Artillery & K6** - Testes de carga
 
-│  │  ├─ Security Groups (EKS Cluster + Nodes)            │  │
+---
 
-│  │  └─ RDS PostgreSQL 17.4                              │  │- ✅ **Aplicação:** Manifests prontos para deploy
+## 📦 Pré-requisitos
 
-│  └──────────────────────────────────────────────────────┘  │
-
-│                                                              │### ✨ Funcionalidades
-
-│  ┌──────────────────────────────────────────────────────┐  │
-
-│  │  EKS Cluster (fiap-soat-eks-dev)                     │  │## 👨‍💻 **Responsável**
-
-│  │  ├─ Versão: 1.27                                      │  │
-
-│  │  ├─ IAM: LabEksClusterRole (auto-descoberto)         │  │- ✅ Auto-discovery de VPC e Subnets através de RDS existente- **Dev 3 (rs94458)** - EKS + Infraestrutura de Integração com App
-
-│  │  ├─ Add-ons: vpc-cni, kube-proxy, coredns            │  │
-
-│  │  └─ OIDC Provider (IRSA habilitado)                  │  │- ✅ Auto-discovery de IAM Roles (LabEksClusterRole, LabEksNodeRole)- **Repositórios:** `fiap-soat-k8s-terraform`
-
-│  └──────────────────────────────────────────────────────┘  │
-
-│                                                              │- ✅ Security Groups flexíveis (criação automática ou reutilização)- **Foco:** Cluster EKS + Deploy da aplicação
-
-│  ┌──────────────────────────────────────────────────────┐  │
-
-│  │  Node Group (general)                                 │  │- ✅ EKS Cluster v1.27 com 3 add-ons essenciais- **Tecnologias:** Terraform, AWS EKS, Kubernetes, Docker, CI/CD
-
-│  │  ├─ Tipo de Instância: t3.micro                       │  │
-
-│  │  ├─ Capacidade: ON_DEMAND                             │  │- ✅ Node Groups configuráveis (min/max/desired size)
-
-│  │  ├─ Min: 1 | Max: 3 | Desired: 2                     │  │
-
-│  │  └─ IAM: LabEksNodeRole (auto-descoberto)            │  │- ✅ IRSA (IAM Roles for Service Accounts) habilitado## 📁 **Estrutura do Projeto**
-
-│  └──────────────────────────────────────────────────────┘  │
-
-│                                                              │- ✅ Scripts de deploy e manutenção automatizados```
-
-└─────────────────────────────────────────────────────────────┘
-
-```- ✅ Testes de carga com Artillery e K6environments/
-
-
-
-## 📦 Pré-requisitos├── dev/               # Ambiente desenvolvimento
-
-
-
-- **Terraform** >= 1.0## 🏗️ Arquitetura│   ├── main.tf        # Configuração principal EKS
-
-- **AWS CLI** configurado com credenciais AWS Academy
-
-- **kubectl** para interagir com o cluster│   ├── variables.tf   # Variáveis do ambiente
-
-- **Git** para controle de versão
-
-- **Conta AWS** - AWS Academy Learner Lab ativo```│   ├── outputs.tf     # Outputs (cluster endpoint, etc)
-
-
-
-### Credenciais AWS Academy┌─────────────────────────────────────────────────────────────┐│   └── backend.tf     # Backend S3 para state
-
-
-
-As credenciais AWS Academy expiram a cada ~3 horas. Use o script de renovação:│                       AWS Academy Account                    │├── prod/              # Ambiente produção (futuro)
-
-
-
-```bash├─────────────────────────────────────────────────────────────┤modules/
-
-./scripts/aws-config.sh
-
-# Cole as credenciais e pressione Ctrl+D│                                                              │├── eks/               # Módulo EKS principal
-
-```
-
-│  ┌──────────────────────────────────────────────────────┐  ││   ├── cluster.tf     # Cluster EKS
-
-## 🚀 Início Rápido
-
-│  │  VPC (descoberta via RDS)                            │  ││   ├── node-groups.tf # Node groups
-
-### 1. Clone o repositório
-
-│  │  ├─ 6 Subnets (públicas/privadas)                    │  ││   ├── addons.tf      # Add-ons essenciais
+### Ferramentas Necessárias
 
 ```bash
+# Terraform (>= 1.0)
+terraform version
 
-git clone https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform.git│  │  ├─ Security Groups (EKS Cluster + Nodes)            │  ││   └── outputs.tf     # Outputs do módulo
+# kubectl
+kubectl version --client
 
+# AWS CLI
+aws --version
+
+# Git
+git --version
+```
+
+### Conta AWS
+- **AWS Academy Learner Lab** ativo
+- **Budget**: $50 USD
+- **Região**: us-east-1
+- **Credenciais**: Renovar a cada ~3 horas
+
+---
+
+## 🚀 Como Deployar
+
+### 1️⃣ Clonar o Repositório
+
+```bash
+git clone https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform.git
 cd fiap-soat-k8s-terraform
+```
 
-```│  │  └─ RDS PostgreSQL 17.4                              │  │├── networking/        # VPC e networking
+### 2️⃣ Configurar Credenciais AWS Academy
 
-
-
-### 2. Configure credenciais AWS│  └──────────────────────────────────────────────────────┘  ││   ├── vpc.tf         # VPC para EKS
-
-
-
-```bash│                                                              ││   ├── subnets.tf     # Subnets públicas/privadas
-
+```bash
 ./scripts/aws-config.sh
-
-# Cole as credenciais AWS Academy quando solicitado│  ┌──────────────────────────────────────────────────────┐  ││   └── security.tf    # Security groups
-
 ```
 
-│  │  EKS Cluster (fiap-soat-eks-dev)                     │  │├── monitoring/        # Observabilidade básica
+Cole as credenciais do AWS Academy quando solicitado no formato:
 
-### 3. Configure variáveis
+```
+aws_access_key_id=ASIAUCQMSWOI2CB3BP3S
+aws_secret_access_key=ey3nbFY1QZeN57JZC3n0QlGq733TW/bv7fnpSxBr
+aws_session_token=IQoJb3JpZ2luX2VjEDgaC...
+```
 
-│  │  ├─ Version: 1.27                                     │  │manifests/
+Pressione `Ctrl+D` para finalizar.
+
+### 3️⃣ Configurar Variáveis do Terraform
 
 ```bash
-
-cd environments/dev│  │  ├─ IAM: LabEksClusterRole (auto-discovered)         │  │├── application/       # Manifests K8s da aplicação
-
+cd environments/dev
 cp terraform.tfvars.example terraform.tfvars
-
-# Edite terraform.tfvars se necessário│  │  ├─ Add-ons: vpc-cni, kube-proxy, coredns            │  │├── ingress/           # Configuração Ingress
-
 ```
 
-│  │  └─ OIDC Provider (IRSA enabled)                     │  │└── secrets/           # Secrets Kubernetes
+Edite `terraform.tfvars` se necessário (valores padrão já estão otimizados).
 
-### 4. Deploy
-
-│  └──────────────────────────────────────────────────────┘  │```
+### 4️⃣ Provisionar Infraestrutura EKS
 
 ```bash
-
-# Inicializar Terraform│                                                              │
-
+# Inicializar Terraform
 terraform init
 
-│  ┌──────────────────────────────────────────────────────┐  │## ⚙️ **Configuração AWS Academy** 🎓
+# Visualizar plano de execução
+terraform plan
 
-# Planejar alterações
-
-terraform plan│  │  Node Group (general)                                 │  │- **Região:** us-east-1
-
-
-
-# Aplicar configuração│  │  ├─ Instance Type: t3.micro                           │  │- **Budget:** $50 USD (AWS Academy Learner Lab)
-
+# Aplicar configuração (⚠️ Cuidado com custos!)
 terraform apply
+```
 
-```│  │  ├─ Capacity: ON_DEMAND                               │  │- **IAM Roles:** Usa roles pré-criadas do Academy (`LabEksClusterRole`, `LabEksNodeRole`)
+Aguarde ~10-15 minutos para o cluster EKS ficar pronto.
 
+### 5️⃣ Configurar kubectl
 
-
-### 5. Configure kubectl│  │  ├─ Min: 1 | Max: 3 | Desired: 2                     │  │- **Node Group:** 1x t3.micro (mais econômico permitido)
-
-
-
-```bash│  │  └─ IAM: LabEksNodeRole (auto-discovered)            │  │- **Networking:** Subnets públicas (sem NAT Gateway para economia)
-
+```bash
 aws eks update-kubeconfig --region us-east-1 --name fiap-soat-eks-dev
-
-kubectl get nodes│  └──────────────────────────────────────────────────────┘  │- **Add-ons:** Apenas essenciais (kube-proxy, vpc-cni, coredns)
-
+kubectl get nodes
 ```
 
-│                                                              │- **Load Balancer:** NodePort/ClusterIP (sem ELB para economia)
+### 6️⃣ Deployar Aplicação NestJS
 
-## 📁 Estrutura do Projeto
-
-└─────────────────────────────────────────────────────────────┘
-
+```bash
+cd ../../
+kubectl apply -f manifests/
 ```
 
-fiap-soat-k8s-terraform/```## 🚀 **Quick Start - AWS Academy** ⚡
+Verifique o deploy:
 
+```bash
+kubectl get pods -n fiap-soat-app
+kubectl get service -n fiap-soat-app
+```
+
+Aguarde ~3 minutos para o Load Balancer ficar pronto.
+
+### 7️⃣ Testar a Aplicação
+
+```bash
+# Obter endpoint do Load Balancer
+LOAD_BALANCER_URL=$(kubectl get service -n fiap-soat-app fiap-soat-nestjs-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+# Testar health check
+curl http://$LOAD_BALANCER_URL/health
+
+# Testar endpoint de produtos
+curl http://$LOAD_BALANCER_URL/products
+```
+
+### 8️⃣ (Opcional) Deployar Lambda + Cognito
+
+Consulte o repositório [fiap-soat-lambda](https://github.com/3-fase-fiap-soat-team/fiap-soat-lambda) branch `feat-rafael`.
+
+---
+
+## 📁 Estrutura do Repositório
+
+```
+fiap-soat-k8s-terraform/
 ├── environments/
-
-│   └── dev/              # Configuração do ambiente de desenvolvimento
-
-│       ├── main.tf       # Configuração principal (VPC discovery via RDS)
-
-│       ├── variables.tf  # Variáveis do ambiente## 📦 Pré-requisitos### **1. Clone e Configure (2 minutos)**
-
-│       ├── outputs.tf    # Outputs do Terraform
-
-│       └── terraform.tfvars  # Valores das variáveis```bash
-
+│   └── dev/
+│       ├── main.tf              # Configuração principal
+│       ├── variables.tf         # Variáveis de entrada
+│       ├── outputs.tf           # Outputs (cluster endpoint, etc)
+│       └── terraform.tfvars     # Valores das variáveis
+│
 ├── modules/
-
-│   ├── eks/              # Módulo do EKS Cluster- **Terraform** >= 1.0git clone https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform.git
-
-│   │   ├── cluster.tf    # Cluster + Security Groups + IAM discovery
-
-│   │   ├── node_groups.tf- **AWS CLI** configurado com credenciais AWS Academycd fiap-soat-k8s-terraform
-
-│   │   ├── oidc.tf
-
-│   │   ├── addons.tf- **kubectl** para interagir com o cluster
-
-│   │   ├── variables.tf
-
-│   │   └── outputs.tf- **Git** para controle de versão# Configurar credenciais AWS Academy (cole o conteúdo do lab)
-
-│   └── vpc/              # Módulo VPC (não usado - usamos VPC do RDS)
-
-├── manifests/            # Manifests Kubernetes- **AWS Account** - AWS Academy Learner Lab ativo./scripts/aws-config.sh
-
-│   ├── namespace.yaml
-
-│   ├── deployment.yaml```
-
-│   └── service.yaml
-
-├── scripts/              # Scripts auxiliares### Credenciais AWS Academy
-
-│   ├── aws-config.sh     # Renovar credenciais AWS Academy
-
-│   ├── deploy.sh         # Deploy completo automatizado### **2. Teste Rápido (5 minutos)**
-
-│   ├── deploy-from-ecr.sh
-
-│   ├── force-destroy.shAs credenciais AWS Academy expiram a cada ~3 horas. Use o script de renovação:```bash
-
-│   └── README.md
-
-├── load-tests/           # Testes de carga# Teste rápido e seguro com timeout automático
-
-│   ├── artillery/
-
-│   └── k6/```bash./scripts/test-eks-safe.sh
-
-├── docs/                 # Documentação organizada
-
-│   ├── AWS-ACADEMY-SETUP.md  # Guia completo AWS Academy./scripts/aws-config.sh```
-
-│   ├── guides/           # Guias de configuração
-
-│   ├── troubleshooting/  # Soluções de problemas# Cole as credenciais e pressione Ctrl+D
-
-│   ├── analysis/         # Análises técnicas
-
-│   └── archived/         # Documentação histórica```### **3. Deploy da Aplicação**
-
-├── .github/
-
-│   └── workflows/```bash
-
-│       └── terraform-eks.yml  # Pipeline CI/CD
-
-└── README.md             # Este arquivo## 🚀 Quick Start# Configurar kubectl
-
+│   └── eks/
+│       ├── cluster.tf           # Cluster EKS + IAM roles
+│       ├── variables.tf         # Variáveis do módulo
+│       └── outputs.tf           # Outputs do módulo
+│
+├── manifests/
+│   ├── namespace.yaml           # Namespace fiap-soat-app
+│   ├── configmap.yaml           # Configurações da aplicação
+│   ├── secret.yaml              # Credenciais RDS
+│   ├── deployment.yaml          # Deploy NestJS
+│   └── service.yaml             # Service LoadBalancer (NLB)
+│
+├── scripts/
+│   ├── aws-config.sh            # Configurar credenciais AWS
+│   ├── deploy.sh                # Deploy automatizado
+│   ├── deploy-from-ecr.sh       # Deploy de imagem ECR
+│   └── force-destroy.sh         # Destruir recursos
+│
+├── load-tests/
+│   ├── artillery/               # Testes de carga Artillery
+│   └── k6/                      # Testes de carga K6
+│
+├── docs/                        # Documentação técnica detalhada
+│
+└── README.md                    # Este arquivo
 ```
 
-aws eks update-kubeconfig --region us-east-1 --name fiap-soat-cluster
+---
 
-## 📚 Documentação
+## 💻 Comandos Úteis
 
-### 1. Clone o repositório
-
-### 🎓 Configuração AWS Academy
-
-# Deploy da aplicação
-
-- **[AWS Academy Setup Guide](docs/AWS-ACADEMY-SETUP.md)** - Guia completo para AWS Academy
-
-  - Descoberta de VPC via RDS```bashkubectl apply -f manifests/application/
-
-  - Auto-discovery de IAM Roles
-
-  - Configuração de Security Groupsgit clone https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform.git
-
-  - Gerenciamento de credenciais
-
-  - Troubleshooting específicocd fiap-soat-k8s-terraform# Verificar
-
-
-
-### Guias```kubectl get pods
-
-
-
-- [Auto-Discovery de IAM Roles](docs/guides/IAM-ROLES-AUTO-DISCOVERY.md) - Como funciona a descoberta automática de roleskubectl get services
-
-- [Guia de Security Groups](docs/guides/SECURITY-GROUPS-GUIDE.md) - Configuração de Security Groups
-
-- [Descoberta de VPC via RDS](docs/guides/VPC-DISCOVERY-CONFIRMATION.md) - Como descobrir VPC através do RDS### 2. Configure credenciais AWS```
-
-- [Guia de Upload ECR](docs/guides/ECR-UPLOAD-GUIDE.md) - Subir imagens para ECR
-
-- [Script de Deploy](docs/guides/DEPLOY-SCRIPT-ENHANCED.md) - Uso do script de deploy
-
-
-
-### Troubleshooting```bash## 🚀 **Setup Local**
-
-
-
-- [Problemas Resolvidos](docs/troubleshooting/PROBLEMA-RESOLVIDO.md)./scripts/aws-config.sh
-
-- [Situações de Emergência](docs/troubleshooting/SITUACAO-EMERGENCIAL.md)
-
-- [Análise de VPC Órfã](docs/troubleshooting/VPC-ORPHAN-ANALYSIS.md)# Cole as credenciais AWS Academy quando solicitado### **Opção 1: Setup Automatizado (Recomendado)**
-
-
-
-### Análises Técnicas``````bash
-
-
-
-- [Análise do Terraform State](docs/analysis/TERRAFORM-STATE-ANALYSIS.md)# Clonar repositório
-
-- [Contexto Completo do Projeto](docs/analysis/PROJECT-CONTEXT-COMPLETE.md)
-
-### 3. Configure variáveisgit clone https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform.git
-
-## 🔧 Scripts Úteis
-
-cd fiap-soat-k8s-terraform
-
-### Renovar Credenciais AWS Academy
+### Kubernetes
 
 ```bash
+# Listar todos os recursos no namespace
+kubectl get all -n fiap-soat-app
 
-```bash
+# Ver logs da aplicação
+kubectl logs -n fiap-soat-app -l app=fiap-soat-nestjs -f
 
-./scripts/aws-config.shcd environments/dev# Setup completo automatizado
-
-```
-
-cp terraform.tfvars.example terraform.tfvars./scripts/setup-dev.sh
-
-### Deploy Completo Automatizado
-
-# Edite terraform.tfvars se necessário```
-
-```bash
-
-./scripts/deploy.sh```
-
-```
-
-### **Opção 2: Setup Manual**
-
-### Deploy de Aplicação do ECR
-
-### 4. Deploy```bash
-
-```bash
-
-./scripts/deploy-from-ecr.sh# Configurar Git
-
-```
-
-```bashgit config user.name "rs94458"
-
-### Destruir Recursos com Força
-
-# Inicializar Terraformgit config user.email "seu-email@gmail.com"
-
-```bash
-
-./scripts/force-destroy.shterraform init
-
-```
-
-# Instalar dependências
-
-Veja mais detalhes em [scripts/README.md](scripts/README.md).
-
-# Planejar alterações# Terraform
-
-## 🔄 CI/CD
-
-terraform plansudo apt-get install terraform
-
-O projeto usa **GitHub Actions** para automação de deploy. O workflow é acionado em:
-
-
-
-- Pull Requests para `main`
-
-- Push direto na branch `main`# Aplicar configuração# kubectl
-
-
-
-**Arquivo:** `.github/workflows/terraform-eks.yml`terraform applycurl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-
-
-
-### Secrets Necessários```sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-
-
-Configure no GitHub Repository Settings > Secrets:
-
-
-
-- `AWS_ACCESS_KEY_ID`### 5. Configure kubectl# AWS CLI (se necessário)
-
-- `AWS_SECRET_ACCESS_KEY`
-
-- `AWS_SESSION_TOKEN`curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
-
-
-## 🐛 Troubleshooting```bashunzip awscliv2.zip && sudo ./aws/install
-
-
-
-### Credenciais Expiradasaws eks update-kubeconfig --region us-east-1 --name fiap-soat-eks-dev
-
-
-
-**Erro:** `AuthFailure: AWS was not able to validate the provided access credentials`kubectl get nodes# Verificar instalações
-
-
-
-**Solução:**```terraform version
-
-```bash
-
-./scripts/aws-config.shkubectl version --client
-
-# Cole novas credenciais do AWS Academy
-
-```## 📁 Estrutura do Projetoaws --version
-
-
-
-### RDS Não Encontrado```
-
-
-
-**Problema:** Terraform não consegue descobrir VPC porque RDS não existe```
-
-
-
-**Solução:** Certifique-se que o RDS `fiap-soat-db` está ativo:fiap-soat-k8s-terraform/## 🔑 **Configuração AWS Academy**
-
-```bash
-
-aws rds describe-db-instances --query 'DBInstances[0].DBInstanceIdentifier'├── environments/
-
-```
-
-│   └── dev/              # Configuração do ambiente de desenvolvimento### **Script de Configuração Rápida**
-
-### EKS Cluster Não Sobe
-
-│       ├── main.tf       # Configuração principal (VPC discovery via RDS)```bash
-
-**Erro:** `couldn't find resource` para IAM roles
-
-│       ├── variables.tf  # Variáveis do ambiente# Execute o script e cole as credenciais do AWS Academy
-
-**Solução:** O projeto usa **auto-discovery de IAM roles** - roles são descobertos dinamicamente. Verifique se as roles existem:
-
-```bash│       ├── outputs.tf    # Outputs do Terraform./scripts/aws-config.sh
-
-aws iam list-roles --query 'Roles[?contains(RoleName, `Lab`)].RoleName'
-
-```│       └── terraform.tfvars  # Valores das variáveis
-
-
-
-### Security Groups Incompatíveis├── modules/# Cole o conteúdo completo no formato:
-
-
-
-**Problema:** Tentativa de reutilizar SGs do RDS para EKS│   ├── eks/              # Módulo do EKS Cluster# aws_access_key_id=ASIAUCQMSWOI2CB3BP3S
-
-
-
-**Solução:** Configure `create_security_groups = true` no `terraform.tfvars` para criar SGs específicos para EKS.│   │   ├── cluster.tf    # Cluster + Security Groups + IAM discovery# aws_secret_access_key=ey3nbFY1QZeN57JZC3n0QlGq733TW/bv7fnpSxBr
-
-
-
-## 🤝 Contribuindo│   │   ├── node_groups.tf# aws_session_token=IQoJb3JpZ2luX2VjEDgaC...
-
-
-
-1. Fork o projeto│   │   ├── oidc.tf# 
-
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-
-3. Commit suas mudanças (`git commit -m 'feat: adiciona nova feature'`)│   │   ├── addons.tf# Pressione Ctrl+D para finalizar
-
-4. Push para a branch (`git push origin feature/nova-feature`)
-
-5. Abra um Pull Request│   │   ├── variables.tf# O script configura automaticamente e testa a conexão
-
-
-
-## 📝 Licença│   │   └── outputs.tf```
-
-
-
-Este projeto é parte do curso FIAP SOAT - Fase 3.│   └── vpc/              # Módulo VPC (não usado - usamos VPC do RDS)
-
-
-
-## 👥 Equipe├── manifests/            # Kubernetes manifests### **Verificação**
-
-
-
-- **Owner:** rs94458│   ├── namespace.yaml```bash
-
-- **Team:** 3-fase-fiap-soat-team
-
-- **Project:** fiap-soat-fase3│   ├── deployment.yaml# Testar se as credenciais estão funcionando
-
-
-
-## 📞 Suporte│   └── service.yamlaws sts get-caller-identity
-
-
-
-Para dúvidas ou problemas:├── scripts/              # Scripts auxiliares```
-
-
-
-1. Consulte a [documentação](docs/)│   ├── aws-config.sh     # Renovar credenciais AWS Academy
-
-2. Verifique o [troubleshooting](docs/troubleshooting/)
-
-3. Abra uma [issue](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/issues)│   ├── deploy.sh         # Deploy completo automatizado## 🏗️ **Desenvolvimento**
-
-
-
----│   ├── deploy-from-ecr.sh```bash
-
-
-
-**🎓 Otimizado para AWS Academy** | **🚀 Pronto para Produção** | **📊 Econômico**│   ├── force-destroy.sh# Inicializar Terraform
-
-
-│   └── README.mdcd environments/dev
-
-├── load-tests/           # Testes de cargaterraform init
-
-│   ├── artillery/
-
-│   └── k6/# Planejar criação do cluster
-
-├── docs/                 # Documentação organizadaterraform plan
-
-│   ├── guides/           # Guias de configuração
-
-│   ├── troubleshooting/  # Soluções de problemas# Aplicar mudanças (⚠️ CUIDADO COM CUSTOS!)
-
-│   ├── analysis/         # Análises técnicasterraform apply
-
-│   └── archived/         # Documentação histórica
-
-├── .github/# Configurar kubectl
-
-│   └── workflows/aws eks update-kubeconfig --region us-east-1 --name fiap-soat-cluster
-
-│       └── terraform-eks.yml  # CI/CD pipeline
-
-└── README.md             # Este arquivo# Verificar cluster
-
-```kubectl get nodes
-
-kubectl get pods -A
-
-## 📚 Documentação
-
-# Deploy da aplicação
-
-### Guiaskubectl apply -f ../../manifests/application/
-
-
-
-- [IAM Roles Auto-Discovery](docs/guides/IAM-ROLES-AUTO-DISCOVERY.md) - Como funciona a descoberta automática de roles# Verificar deploy
-
-- [Security Groups Guide](docs/guides/SECURITY-GROUPS-GUIDE.md) - Configuração de Security Groupskubectl get pods
-
-- [VPC Discovery via RDS](docs/guides/VPC-DISCOVERY-CONFIRMATION.md) - Como descobrir VPC através do RDSkubectl get services
-
-- [ECR Upload Guide](docs/guides/ECR-UPLOAD-GUIDE.md) - Subir imagens para ECR```
-
-- [Deploy Script](docs/guides/DEPLOY-SCRIPT-ENHANCED.md) - Uso do script de deploy
-
-## 💰 **Otimizações de Custo AWS Academy**
-
-### Troubleshooting```hcl
-
-# Configurações ultra-econômicas
-
-- [Problemas Resolvidos](docs/troubleshooting/PROBLEMA-RESOLVIDO.md)node_group_instance_types = ["t3.micro"]    # Mais barato
-
-- [Situações de Emergência](docs/troubleshooting/SITUACAO-EMERGENCIAL.md)node_group_desired_size   = 1               # Mínimo
-
-- [VPC Orphan Analysis](docs/troubleshooting/VPC-ORPHAN-ANALYSIS.md)node_group_max_size      = 2               # Limite baixo
-
-node_group_min_size      = 1               # Mínimo
-
-### Análises Técnicas
-
-# Sem add-ons pagos
-
-- [Terraform State Analysis](docs/analysis/TERRAFORM-STATE-ANALYSIS.md)cluster_addons = {
-
-- [Project Context Complete](docs/analysis/PROJECT-CONTEXT-COMPLETE.md)  kube-proxy = {}     # Gratuito
-
-  vpc-cni    = {}     # Gratuito  
-
-## 🔧 Scripts Úteis  coredns    = {}     # Gratuito
-
-  # aws-load-balancer-controller = {} # DESABILITADO (custa $)
-
-### Renovar Credenciais AWS Academy}
-
-
-
-```bash# Networking básico
-
-./scripts/aws-config.shenable_nat_gateway = false      # Economia (usar só subnets públicas)
-
-```single_nat_gateway = true       # Se precisar de NAT
-
-```
-
-### Deploy Completo Automatizado
-
-## 🔄 **Workflow de Desenvolvimento**
-
-```bash1. **Branch:** `feature/[nome-da-feature]`
-
-./scripts/deploy.sh2. **Desenvolvimento:** Modificar Terraform + manifests K8s
-
-```3. **Teste:** `terraform plan` + validação manifests
-
-4. **PR:** Solicitar review do team
-
-### Deploy de Aplicação do ECR5. **CI/CD:** GitHub Actions valida Terraform
-
-6. **Deploy:** Manual para cluster (cuidado com custos)
-
-```bash
-
-./scripts/deploy-from-ecr.sh## 🧪 **CI/CD Pipeline**
-
-```- **Trigger:** Push na `main` ou PR
-
-- **Validação:** `terraform validate` + `kubectl --dry-run`
-
-### Destruir Recursos com Força- **Linting:** `tflint` + `kubeval`
-
-- **Plan:** `terraform plan` (comentário no PR)
-
-```bash- **Deploy:** Manual após aprovação
-
-./scripts/force-destroy.sh
-
-```## ☸️ **Recursos Kubernetes**
-
-```yaml
-
-Veja mais detalhes em [scripts/README.md](scripts/README.md).# Exemplo de deploy da aplicação
-
-apiVersion: apps/v1
-
-## 🔄 CI/CDkind: Deployment
-
-metadata:
-
-O projeto usa **GitHub Actions** para automação de deploy. O workflow é acionado em:  name: fiap-soat-app
-
-spec:
-
-- Pull Requests para `main`  replicas: 1  # Mínimo para economia
-
-- Push direto na branch `main`  selector:
-
-    matchLabels:
-
-**Arquivo:** `.github/workflows/terraform-eks.yml`      app: fiap-soat-app
-
-  template:
-
-### Secrets Necessários    spec:
-
-      containers:
-
-Configure no GitHub Repository Settings > Secrets:      - name: app
-
-        image: fiap-soat-app:latest
-
-- `AWS_ACCESS_KEY_ID`        ports:
-
-- `AWS_SECRET_ACCESS_KEY`        - containerPort: 3000
-
-- `AWS_SESSION_TOKEN`        resources:
-
-          limits:
-
-## 🐛 Troubleshooting            memory: "256Mi"    # Limitado para t3.micro
-
-            cpu: "200m"
-
-### Credenciais Expiradas          requests:
-
-            memory: "128Mi"
-
-**Erro:** `AuthFailure: AWS was not able to validate the provided access credentials`            cpu: "100m"
-
-```
-
-**Solução:**
-
-```bash## 🔐 **Integração com Outros Repositórios**
-
-./scripts/aws-config.sh- **Database:** Conecta com RDS via service/endpoint
-
-# Cole novas credenciais do AWS Academy- **Lambda:** Integração via API Gateway
-
-```- **Application:** Deploy da aplicação NestJS no cluster
-
-
-
-### Não Consegue Acessar EC2 VPCs## 🔐 **Secrets GitHub (Auto-configurados)**
-
-- `AWS_ACCESS_KEY_ID` - Chave de acesso AWS Academy
-
-**Problema:** AWS Academy `voclabs` role não tem permissão `ec2:DescribeVpcs`- `AWS_SECRET_ACCESS_KEY` - Secret de acesso AWS Academy
-
-- `AWS_SESSION_TOKEN` - Token de sessão AWS Academy
-
-**Solução:** O projeto usa **auto-discovery via RDS** para contornar essa limitação.- `TF_STATE_BUCKET` - Bucket S3 para state
-
-- `TF_STATE_LOCK_TABLE` - DynamoDB para locks
-
-### EKS Cluster Não Sobe
-
-## 📋 **Comandos Úteis**
-
-**Erro:** `couldn't find resource` para IAM roles```bash
-
-# Verificar estado do cluster
-
-**Solução:** O projeto usa **auto-discovery de IAM roles** - roles são descobertos dinamicamente.kubectl cluster-info
-
-kubectl get nodes -o wide
-
-### Security Groups Incompatíveis
-
-# Verificar pods da aplicação
-
-**Problema:** Tentativa de reutilizar SGs do RDS para EKSkubectl get pods -l app=fiap-soat-app
-
-
-
-**Solução:** Configure `create_security_groups = true` no `terraform.tfvars` para criar SGs específicos para EKS.# Logs da aplicação
-
-kubectl logs -l app=fiap-soat-app -f
-
-## 🤝 Contribuindo
+# Descrever pod (troubleshooting)
+kubectl describe pod -n fiap-soat-app <pod-name>
 
 # Port-forward para testes locais
+kubectl port-forward -n fiap-soat-app service/fiap-soat-nestjs-service 3000:80
 
-1. Fork o projetokubectl port-forward service/fiap-soat-app 3000:3000
+# Escalar aplicação
+kubectl scale deployment -n fiap-soat-app fiap-soat-nestjs --replicas=2
 
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-
-3. Commit suas mudanças (`git commit -m 'feat: adiciona nova feature'`)# Escalar aplicação (se necessário)
-
-4. Push para a branch (`git push origin feature/nova-feature`)kubectl scale deployment fiap-soat-app --replicas=2
-
-5. Abra um Pull Request
-
-# Destruir cluster (IMPORTANTE para economia)
-
-## 📝 Licençaterraform destroy
-
+# Reiniciar deployment
+kubectl rollout restart deployment -n fiap-soat-app fiap-soat-nestjs
 ```
 
-Este projeto é parte do curso FIAP SOAT - Fase 3.
+### Terraform
 
-## 📚 **Links Importantes**
-
-## 👥 Equipe- **Organização:** https://github.com/3-fase-fiap-soat-team
-
-- **Application Repo:** https://github.com/3-fase-fiap-soat-team/fiap-soat-application
-
-- **Owner:** rs94458- **EKS Docs:** https://docs.aws.amazon.com/eks/
-
-- **Team:** 3-fase-fiap-soat-team- **Kubernetes Docs:** https://kubernetes.io/docs/
-
-- **Project:** fiap-soat-fase3
-
-## ⚠️ **IMPORTANTE - AWS Academy** 🎓
-
-## 📞 Suporte- **EKS Control Plane:** ~$2.40/dia ($73/mês)
-
-- **Worker Nodes:** ~$0.50/dia (t3.micro)
-
-Para dúvidas ou problemas:- **Budget total:** $50 USD - Dura ~20 dias com cluster ativo
-
-- **SEMPRE limpar:** Execute `./scripts/emergency-state-cleanup.sh` ou delete via console
-
-1. Consulte a [documentação](docs/)- **CRÍTICO:** Delete cluster no console AWS Academy quando não estiver usando!
-
-2. Verifique o [troubleshooting](docs/troubleshooting/)
-
-3. Abra uma [issue](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/issues)## 🛠️ **Scripts Incluídos** 🆕
-
-- `test-eks-safe.sh` - Teste com timeout automático e limite de custo
-
----- `emergency-state-cleanup.sh` - Limpeza de emergência quando AWS Academy bloqueia CLI
-
-- `force-destroy.sh` - Múltiplas estratégias para destroy
-
-**🎓 AWS Academy Optimized** | **🚀 Production Ready** | **📊 Cost Effective**- `monitor-cleanup.sh` - Monitora recursos ativos
-
-- `aws-config.sh` - Configuração automática de credenciais
-
-## 📋 **AWS Academy - Roles Pré-criadas** ✨
-O AWS Academy fornece roles específicas que devem ser usadas:
-```hcl
-# Automaticamente detectadas pelo Terraform:
-cluster_service_role = "LabEksClusterRole"    # Para o cluster EKS
-node_instance_role   = "LabEksNodeRole"       # Para worker nodes
-```
-
-## 🛡️ **Segurança**
-- VPC isolada com subnets privadas
-- Security Groups restritivos  
-- RBAC Kubernetes configurado
-- Network Policies (se necessário)
-- Secrets Kubernetes para credenciais
-- Service Accounts com IAM roles
-
-## 🔧 **Troubleshooting**
 ```bash
-# Verificar logs do cluster
-kubectl logs -n kube-system -l k8s-app=aws-node
+# Ver estado atual
+terraform show
 
-# Verificar eventos
-kubectl get events --sort-by='.lastTimestamp'
+# Ver outputs
+terraform output
 
-# Verificar resources
-kubectl describe node
-kubectl top pods
+# Destruir infraestrutura (⚠️ CUIDADO)
+terraform destroy
 
-# Verificar EKS add-ons
-aws eks describe-cluster --name fiap-soat-cluster
+# Formatar código
+terraform fmt -recursive
+
+# Validar configuração
+terraform validate
 ```
+
+### AWS CLI
+
+```bash
+# Verificar cluster EKS
+aws eks describe-cluster --name fiap-soat-eks-dev --region us-east-1
+
+# Listar nodes
+aws eks list-nodegroups --cluster-name fiap-soat-eks-dev --region us-east-1
+
+# Verificar RDS
+aws rds describe-db-instances --query 'DBInstances[0].Endpoint'
+
+# Renovar credenciais (a cada ~3h)
+./scripts/aws-config.sh
+```
+
+### Testes de Carga
+
+```bash
+# Artillery (smoke test)
+cd load-tests/artillery
+artillery run smoke-test.yml
+
+# K6 (stress test)
+cd load-tests/k6
+k6 run stress-test.js
+```
+
+---
+
+## 🌿 Branches e Repositórios
+
+### Repositório Principal (EKS/Terraform)
+- **Repo**: [fiap-soat-k8s-terraform](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform)
+- **Branch Principal**: `main`
+- **Responsável**: rs94458 (Dev 3)
+- **Conteúdo**: Infraestrutura EKS, Terraform, Kubernetes manifests
+
+### Repositório Lambda (Autenticação Serverless)
+- **Repo**: [fiap-soat-lambda](https://github.com/3-fase-fiap-soat-team/fiap-soat-lambda)
+- **Branch Funcional**: `feat-rafael` ✅ **Deployado e testado**
+- **Branch Original**: `feat/lambda-e-cognito`
+- **Responsável**: rs94458 (Dev 3)
+- **Conteúdo**: Lambda Functions (signup, auth), API Gateway, Cognito
+
+### Repositório Aplicação (NestJS)
+- **Repo**: [fiap-soat-application](https://github.com/3-fase-fiap-soat-team/fiap-soat-application)
+- **Branch Principal**: `main`
+- **Arquitetura**: Clean Architecture + Domain-Driven Design
+- **Conteúdo**: Aplicação NestJS com endpoints de produtos, clientes, pedidos
+
+---
+
+## 💰 Otimização de Custos (AWS Academy)
+
+### Recursos Ativos
+- **EKS Control Plane**: ~$73/mês
+- **RDS db.t3.micro**: ~$15.50/mês
+- **Network Load Balancer**: ~$22/mês
+- **EC2 t3.micro (2 nodes)**: ~$15/mês
+- **Total Estimado**: ~$125.50/mês ⚠️ *Excede budget de $50*
+
+### Recomendações
+- ✅ **Sempre destruir recursos quando não estiver usando**
+- ✅ **Usar apenas 1 node** (`node_group_desired_size = 1`)
+- ✅ **Desabilitar cluster fora do horário de desenvolvimento**
+- ⚠️ **EKS Control Plane é o maior custo** ($2.40/dia)
+
+```bash
+# Destruir tudo para economizar
+cd environments/dev
+terraform destroy --auto-approve
+```
+
+---
+
+## 👥 Equipe
+
+**Projeto**: FIAP SOAT - Fase 3  
+**Organização**: [3-fase-fiap-soat-team](https://github.com/3-fase-fiap-soat-team)  
+**Responsável Infraestrutura**: rs94458 (Dev 3)
+
+### Repositórios do Projeto
+- 🏗️ [fiap-soat-k8s-terraform](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform) - Infraestrutura EKS
+- 🔐 [fiap-soat-lambda](https://github.com/3-fase-fiap-soat-team/fiap-soat-lambda) - Autenticação Serverless
+- 🍔 [fiap-soat-application](https://github.com/3-fase-fiap-soat-team/fiap-soat-application) - Aplicação NestJS
+
+---
+
+## 📞 Suporte
+
+Para dúvidas ou problemas:
+1. Consulte a [documentação detalhada](docs/)
+2. Verifique [AWS Academy Setup Guide](docs/AWS-ACADEMY-SETUP.md)
+3. Abra uma [issue no GitHub](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/issues)
+
+---
+
+## 📝 Licença
+
+Este projeto é parte do curso **FIAP SOAT - Arquitetura de Software**.  
+Desenvolvido para fins acadêmicos.
+
+---
+
+**🎓 Otimizado para AWS Academy** | **🚀 Pronto para Produção** | **📊 Econômico**
