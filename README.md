@@ -2,9 +2,11 @@
 
 **Infraestrutura como Código para Kubernetes na AWS**
 
-[![Terraform](https://img.shields.io/badge/Terraform-1.0+-623CE4?logo=terraform)](https://www.terraform.io/)
-[![AWS EKS](https://img.shields.io/badge/AWS-EKS-FF9900?logo=amazon-aws)](https://aws.amazon.com/eks/)
+[![Deploy EKS](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/actions/workflows/deploy-app.yml/badge.svg?branch=main)](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/actions/workflows/deploy-app.yml)
+[![Terraform](https://img.shields.io/badge/Terraform-1.5+-623CE4?logo=terraform)](https://www.terraform.io/)
+[![AWS EKS](https://img.shields.io/badge/AWS-EKS%201.30-FF9900?logo=amazon-aws)](https://aws.amazon.com/eks/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.30-326CE5?logo=kubernetes)](https://kubernetes.io/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ---
 
@@ -15,6 +17,7 @@
 - [Stack Tecnológica](#-stack-tecnológica)
 - [Pré-requisitos](#-pré-requisitos)
 - [Como Deployar](#-como-deployar)
+- [Guia Completo de Testes](#-guia-completo-de-testes)
 - [Estrutura do Repositório](#-estrutura-do-repositório)
 - [Comandos Úteis](#-comandos-úteis)
 - [Branches e Repositórios](#-branches-e-repositórios)
@@ -60,13 +63,13 @@ O projeto foi desenvolvido como parte do curso **FIAP SOAT - Fase 3**, com foco 
 │                          ↓                                          │
 │  ┌──────────────────────────────────────────────────────────────┐  │
 │  │  Network Load Balancer (NLB)                                  │  │
-│  │  └─ Port 80 → EKS Service (fiap-soat-nestjs-service)         │  │
+│  │  └─ Port 80 → EKS Service (fiap-soat-application-service)    │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                          ↓                                          │
 │  ┌──────────────────────────────────────────────────────────────┐  │
 │  │  EKS Cluster (fiap-soat-eks-dev) - Kubernetes 1.30           │  │
 │  │  ├─ Namespace: fiap-soat-app                                  │  │
-│  │  ├─ Deployment: fiap-soat-nestjs (1 replica)                 │  │
+│  │  ├─ Deployment: fiap-soat-application (HPA: 1-3 replicas)    │  │
 │  │  ├─ Service: LoadBalancer tipo NLB                            │  │
 │  │  └─ ConfigMap + Secrets                                       │  │
 │  └──────────────────────────────────────────────────────────────┘  │
@@ -226,18 +229,55 @@ Aguarde ~3 minutos para o Load Balancer ficar pronto.
 
 ```bash
 # Obter endpoint do Load Balancer
-LOAD_BALANCER_URL=$(kubectl get service -n fiap-soat-app fiap-soat-nestjs-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+export LB_URL=$(kubectl get service -n fiap-soat-app fiap-soat-application-service \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
 # Testar health check
-curl http://$LOAD_BALANCER_URL/health
+curl http://$LB_URL/health
+
+# Swagger UI (Documentação Interativa)
+echo "http://$LB_URL/docs"
 
 # Testar endpoint de produtos
-curl http://$LOAD_BALANCER_URL/products
+curl http://$LB_URL/products
 ```
 
 ### 8️⃣ (Opcional) Deployar Lambda + Cognito
 
 Consulte o repositório [fiap-soat-lambda](https://github.com/3-fase-fiap-soat-team/fiap-soat-lambda) branch `feat-rafael`.
+
+---
+
+## 🧪 Guia Completo de Testes
+
+Para testes mais detalhados (fluxo de autenticação, pedidos, testes de carga, HPA), consulte:
+- **[📖 Guia Completo de Testes](docs/TESTING-GUIDE.md)** - Passo-a-passo detalhado
+- **[🔄 Estratégia CI/CD](docs/CI-CD-SEPARATION.md)** - Separação de responsabilidades
+- **[🔐 Gerenciamento de Secrets](docs/SECRETS-MANAGEMENT.md)** - Como gerenciar credenciais
+
+### Quick Test: Fluxo Completo
+
+```bash
+# 1. Health Check
+curl http://$LB_URL/health
+
+# 2. Cadastrar cliente (API Gateway + Lambda)
+export API_URL="https://nlxpeaq6w0.execute-api.us-east-1.amazonaws.com/dev"
+curl -X POST $API_URL/signup \
+  -H "Content-Type: application/json" \
+  -d '{"cpf":"12345678900","name":"João Silva","email":"joao@test.com"}'
+
+# 3. Autenticar
+curl -X POST $API_URL/auth \
+  -H "Content-Type: application/json" \
+  -d '{"cpf":"12345678900"}'
+
+# 4. Consultar produtos
+curl http://$LB_URL/products
+
+# 5. Monitorar HPA
+kubectl get hpa -n fiap-soat-app -w
+```
 
 ---
 
@@ -261,9 +301,10 @@ fiap-soat-k8s-terraform/
 ├── manifests/
 │   ├── namespace.yaml           # Namespace fiap-soat-app
 │   ├── configmap.yaml           # Configurações da aplicação
-│   ├── secret.yaml              # Credenciais RDS
-│   ├── deployment.yaml          # Deploy NestJS
-│   └── service.yaml             # Service LoadBalancer (NLB)
+│   ├── secret.example.yaml      # Template de secrets (não commitar secret.yaml!)
+│   ├── deployment.yaml          # Deploy NestJS (gerenciado pelo repo da aplicação)
+│   ├── service.yaml             # Service LoadBalancer (NLB)
+│   └── hpa.yaml                 # Horizontal Pod Autoscaler (1-3 replicas)
 │
 ├── scripts/
 │   ├── aws-config.sh            # Configurar credenciais AWS
@@ -291,19 +332,19 @@ fiap-soat-k8s-terraform/
 kubectl get all -n fiap-soat-app
 
 # Ver logs da aplicação
-kubectl logs -n fiap-soat-app -l app=fiap-soat-nestjs -f
+kubectl logs -n fiap-soat-app -l app=fiap-soat-application -f
 
 # Descrever pod (troubleshooting)
 kubectl describe pod -n fiap-soat-app <pod-name>
 
 # Port-forward para testes locais
-kubectl port-forward -n fiap-soat-app service/fiap-soat-nestjs-service 3000:80
+kubectl port-forward -n fiap-soat-app service/fiap-soat-application-service 3000:80
 
-# Escalar aplicação
-kubectl scale deployment -n fiap-soat-app fiap-soat-nestjs --replicas=2
+# Ver status do HPA (autoscaling)
+kubectl get hpa -n fiap-soat-app
 
 # Reiniciar deployment
-kubectl rollout restart deployment -n fiap-soat-app fiap-soat-nestjs
+kubectl rollout restart deployment -n fiap-soat-app fiap-soat-application
 ```
 
 ### Terraform
