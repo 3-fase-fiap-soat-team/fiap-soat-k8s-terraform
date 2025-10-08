@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fiap-soat-nestjs
+  name: fiap-soat-application
   namespace: fiap-soat-app
   labels:
-    app: fiap-soat-nestjs
+    app: fiap-soat-application
     version: "1.0"
 spec:
-  replicas: 1
+  # replicas gerenciado pelo HPA (hpa.yaml)
   selector:
     matchLabels:
-      app: fiap-soat-nestjs
+      app: fiap-soat-application
   template:
     metadata:
       labels:
-        app: fiap-soat-nestjs
+        app: fiap-soat-application
         version: "1.0"
     spec:
       containers:
-      - name: nestjs-app
-        image: 280273007505.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-nestjs-rds-app:latest
+      - name: app
+        image: 280273007505.dkr.ecr.us-east-1.amazonaws.com/fiap-soat-app:latest
         imagePullPolicy: Always
         
         ports:
@@ -27,16 +27,39 @@ spec:
           containerPort: 3000
           protocol: TCP
         
+        # Health Checks
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        
         envFrom:
         - configMapRef:
-            name: fiap-soat-config
+            name: fiap-soat-application-config
         - secretRef:
-            name: fiap-soat-secrets
+            name: fiap-soat-application-secrets
         
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "50m"
-          limits:
             memory: "256Mi"
-            cpu: "200m"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

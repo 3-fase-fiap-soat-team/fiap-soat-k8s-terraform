@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fiap-soat-config
+  name: fiap-soat-application-config
   namespace: fiap-soat-app
   labels:
-    app: fiap-soat-nestjs
+    app: fiap-soat-application
 data:
   NODE_ENV: "production"
   PORT: "3000"

@@ -58,6 +58,9 @@ secrets/
 *.crt
 *.cert
 
+# Kubernetes secrets (usar secret.example.yaml como template)
+manifests/secret.yaml
+
 # Temporary files
 *.tmp
 *.bak
@@ -67,6 +70,14 @@ local/
 tmp/
 fiap-soat-nestjs-app.tar.gz
 
+# Scripts auxiliares (manter apenas documentação)
+scripts/*.sh
+scripts/README.en.md
+
 # Scripts arquivados (redundantes)
 scripts/archived/
+
+# Documentos de avaliação (manter apenas README.md)
+AVALIACAO-PROFESSOR.md
+PROMPT-MELHORIAS.md
 
