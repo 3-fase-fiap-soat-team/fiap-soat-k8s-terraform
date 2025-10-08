@@ -2,7 +2,7 @@
 
 **Infraestrutura como Código para Kubernetes na AWS**
 
-[![Deploy EKS](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/actions/workflows/deploy-app.yml/badge.svg?branch=main)](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/actions/workflows/deploy-app.yml)
+[![Deploy EKS Infrastructure](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/actions/workflows/deploy-eks-infra.yml/badge.svg?branch=main)](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/actions/workflows/deploy-eks-infra.yml)
 [![Terraform](https://img.shields.io/badge/Terraform-1.5+-623CE4?logo=terraform)](https://www.terraform.io/)
 [![AWS EKS](https://img.shields.io/badge/AWS-EKS%201.30-FF9900?logo=amazon-aws)](https://aws.amazon.com/eks/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.30-326CE5?logo=kubernetes)](https://kubernetes.io/)
@@ -69,9 +69,13 @@ O projeto foi desenvolvido como parte do curso **FIAP SOAT - Fase 3**, com foco 
 │  ┌──────────────────────────────────────────────────────────────┐  │
 │  │  EKS Cluster (fiap-soat-eks-dev) - Kubernetes 1.30           │  │
 │  │  ├─ Namespace: fiap-soat-app                                  │  │
-│  │  ├─ Deployment: fiap-soat-application (HPA: 1-3 replicas)    │  │
-│  │  ├─ Service: LoadBalancer tipo NLB                            │  │
-│  │  └─ ConfigMap + Secrets                                       │  │
+│  │  ├─ Deployment: fiap-soat-application                         │  │
+│  │  │  ├─ HPA: 1-3 replicas (CPU 70%, Memory 80%)              │  │
+│  │  │  ├─ Health Checks: /health (liveness + readiness)        │  │
+│  │  │  └─ Resources: 512Mi RAM / 500m CPU                       │  │
+│  │  ├─ Service: fiap-soat-application-service (LoadBalancer)    │  │
+│  │  ├─ ConfigMap: fiap-soat-application-config                  │  │
+│  │  └─ Secret: fiap-soat-application-secrets                    │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                          ↓                                          │
 │  ┌──────────────────────────────────────────────────────────────┐  │
@@ -164,19 +168,25 @@ cd fiap-soat-k8s-terraform
 
 ### 2️⃣ Configurar Credenciais AWS Academy
 
+Configure suas credenciais AWS Academy manualmente ou crie um script auxiliar:
+
 ```bash
-./scripts/aws-config.sh
+# Abra o arquivo de credenciais
+nano ~/.aws/credentials
 ```
 
-Cole as credenciais do AWS Academy quando solicitado no formato:
+Cole as credenciais do AWS Academy no formato:
 
-```
+```ini
+[default]
 aws_access_key_id=ASIAUCQMSWOI2CB3BP3S
 aws_secret_access_key=ey3nbFY1QZeN57JZC3n0QlGq733TW/bv7fnpSxBr
 aws_session_token=IQoJb3JpZ2luX2VjEDgaC...
 ```
 
-Pressione `Ctrl+D` para finalizar.
+Salve com `Ctrl+O` e saia com `Ctrl+X`.
+
+> **Nota**: As credenciais AWS Academy expiram a cada ~3 horas. Renove-as sempre que necessário.
 
 ### 3️⃣ Configurar Variáveis do Terraform
 
@@ -211,10 +221,24 @@ kubectl get nodes
 
 ### 6️⃣ Deployar Aplicação NestJS
 
-```bash
-cd ../../
-kubectl apply -f manifests/
-```
+O deployment da aplicação NestJS é gerenciado pelo **repositório [fiap-soat-application](https://github.com/3-fase-fiap-soat-team/fiap-soat-application)** via GitHub Actions.
+
+Este repositório (`fiap-soat-k8s-terraform`) gerencia apenas a **infraestrutura Kubernetes**:
+- Namespace
+- ConfigMap
+- Secret (via GitHub Secrets)
+- Service (LoadBalancer/NLB)
+- HPA (Horizontal Pod Autoscaler)
+
+**Para deployar a aplicação:**
+1. Configure os secrets no repositório `fiap-soat-application`:
+   - `DB_PASSWORD`
+   - `JWT_SECRET`
+2. Faça push para a branch `main` do repositório da aplicação
+3. O workflow CI/CD automaticamente:
+   - Builda a imagem Docker
+   - Faz push para ECR
+   - Aplica o `deployment.yaml` no cluster EKS
 
 Verifique o deploy:
 
@@ -242,7 +266,40 @@ echo "http://$LB_URL/docs"
 curl http://$LB_URL/products
 ```
 
-### 8️⃣ (Opcional) Deployar Lambda + Cognito
+### 8️⃣ Deployar Infraestrutura Kubernetes via GitHub Actions
+
+Este repositório usa **GitHub Actions** para automatizar o deploy da infraestrutura Kubernetes:
+
+**Workflow**: `.github/workflows/deploy-eks-infra.yml`
+- **Trigger**: Push na branch `main`
+- **Responsabilidades**:
+  - Aplica `namespace.yaml`
+  - Cria `configmap.yaml` com variáveis de ambiente
+  - Cria `secret.yaml` dinamicamente a partir de GitHub Secrets
+  - Aplica `service.yaml` (LoadBalancer/NLB)
+  - Aplica `hpa.yaml` (Horizontal Pod Autoscaler)
+
+**Configurar Secrets no GitHub**:
+1. Acesse: `Settings` > `Secrets and variables` > `Actions`
+2. Adicione os secrets:
+   - `DB_PASSWORD`: Senha do RDS PostgreSQL
+   - `JWT_SECRET`: Secret para geração de tokens JWT
+
+**Deploy Manual (Opcional)**:
+```bash
+# Aplicar manualmente os manifestos
+kubectl apply -f manifests/namespace.yaml
+kubectl apply -f manifests/configmap.yaml
+kubectl apply -f manifests/secret.yaml  # ⚠️ Configure antes!
+kubectl apply -f manifests/service.yaml
+kubectl apply -f manifests/hpa.yaml
+```
+
+> **Importante**: O `deployment.yaml` é gerenciado pelo repositório da aplicação (`fiap-soat-application`), não por este repositório.
+
+---
+
+### 9️⃣ (Opcional) Deployar Lambda + Cognito
 
 Consulte o repositório [fiap-soat-lambda](https://github.com/3-fase-fiap-soat-team/fiap-soat-lambda) branch `feat-rafael`.
 
@@ -250,10 +307,42 @@ Consulte o repositório [fiap-soat-lambda](https://github.com/3-fase-fiap-soat-t
 
 ## 🧪 Guia Completo de Testes
 
-Para testes mais detalhados (fluxo de autenticação, pedidos, testes de carga, HPA), consulte:
-- **[📖 Guia Completo de Testes](docs/TESTING-GUIDE.md)** - Passo-a-passo detalhado
-- **[🔄 Estratégia CI/CD](docs/CI-CD-SEPARATION.md)** - Separação de responsabilidades
-- **[🔐 Gerenciamento de Secrets](docs/SECRETS-MANAGEMENT.md)** - Como gerenciar credenciais
+### ⚙️ Funcionalidades de Alta Disponibilidade
+
+Este projeto implementa **Horizontal Pod Autoscaler (HPA)** e **Health Checks** para garantir alta disponibilidade:
+
+#### Horizontal Pod Autoscaler (HPA)
+- **Replicas**: 1 mínimo, 3 máximo
+- **Métricas**: CPU 70%, Memory 80%
+- **Comportamento**: Escala automaticamente baseado na carga
+```bash
+# Monitorar HPA em tempo real
+kubectl get hpa -n fiap-soat-app -w
+
+# Simular carga e observar autoscaling
+kubectl run -i --tty load-generator --rm --image=busybox --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://fiap-soat-application-service/products; done"
+```
+
+#### Health Checks
+- **Liveness Probe**: GET /health (porta 3000) - verifica se pod está vivo
+- **Readiness Probe**: GET /health (porta 3000) - verifica se pod está pronto para receber tráfego
+- **Configuração**: 
+  - Delay inicial: 30s (liveness), 10s (readiness)
+  - Período: 10s
+  - Timeout: 5s
+  - Falhas permitidas: 3
+
+```bash
+# Verificar health checks
+kubectl describe pod -n fiap-soat-app -l app=fiap-soat-application | grep -A 10 "Liveness\|Readiness"
+
+# Testar endpoint diretamente
+curl http://$LB_URL/health
+```
+
+### 🧪 Testes Funcionais
+
+Para testes mais detalhados (fluxo de autenticação, pedidos, testes de carga), consulte os **load-tests/** no repositório.
 
 ### Quick Test: Fluxo Completo
 
@@ -285,6 +374,10 @@ kubectl get hpa -n fiap-soat-app -w
 
 ```
 fiap-soat-k8s-terraform/
+├── .github/
+│   └── workflows/
+│       └── deploy-eks-infra.yml # CI/CD: Deploy infra K8s (ConfigMap, Secret, Service, HPA)
+│
 ├── environments/
 │   └── dev/
 │       ├── main.tf              # Configuração principal
@@ -300,26 +393,21 @@ fiap-soat-k8s-terraform/
 │
 ├── manifests/
 │   ├── namespace.yaml           # Namespace fiap-soat-app
-│   ├── configmap.yaml           # Configurações da aplicação
-│   ├── secret.example.yaml      # Template de secrets (não commitar secret.yaml!)
-│   ├── deployment.yaml          # Deploy NestJS (gerenciado pelo repo da aplicação)
-│   ├── service.yaml             # Service LoadBalancer (NLB)
-│   └── hpa.yaml                 # Horizontal Pod Autoscaler (1-3 replicas)
-│
-├── scripts/
-│   ├── aws-config.sh            # Configurar credenciais AWS
-│   ├── deploy.sh                # Deploy automatizado
-│   ├── deploy-from-ecr.sh       # Deploy de imagem ECR
-│   └── force-destroy.sh         # Destruir recursos
+│   ├── configmap.yaml           # fiap-soat-application-config
+│   ├── secret.example.yaml      # Template de secrets (⚠️ NÃO commitar secret.yaml!)
+│   ├── deployment.yaml          # fiap-soat-application (gerenciado pelo repo da aplicação)
+│   ├── service.yaml             # fiap-soat-application-service (LoadBalancer/NLB)
+│   └── hpa.yaml                 # Horizontal Pod Autoscaler (1-3 replicas, CPU 70%, Memory 80%)
 │
 ├── load-tests/
 │   ├── artillery/               # Testes de carga Artillery
 │   └── k6/                      # Testes de carga K6
 │
-├── docs/                        # Documentação técnica detalhada
-│
+├── .gitignore                   # Ignora: scripts/, docs/, secrets
 └── README.md                    # Este arquivo
 ```
+
+> **Nota**: As pastas `scripts/` e `docs/` foram removidas do controle de versão para simplificar o repositório. Apenas os manifestos Kubernetes e configurações Terraform são versionados.
 
 ---
 
@@ -377,9 +465,6 @@ aws eks list-nodegroups --cluster-name fiap-soat-eks-dev --region us-east-1
 
 # Verificar RDS
 aws rds describe-db-instances --query 'DBInstances[0].Endpoint'
-
-# Renovar credenciais (a cada ~3h)
-./scripts/aws-config.sh
 ```
 
 ### Testes de Carga
@@ -458,8 +543,8 @@ terraform destroy --auto-approve
 ## 📞 Suporte
 
 Para dúvidas ou problemas:
-1. Consulte a [documentação detalhada](docs/)
-2. Verifique [AWS Academy Setup Guide](docs/AWS-ACADEMY-SETUP.md)
+1. Verifique os logs dos pods: `kubectl logs -n fiap-soat-app -l app=fiap-soat-application`
+2. Consulte a documentação do Kubernetes: https://kubernetes.io/docs/
 3. Abra uma [issue no GitHub](https://github.com/3-fase-fiap-soat-team/fiap-soat-k8s-terraform/issues)
 
 ---
