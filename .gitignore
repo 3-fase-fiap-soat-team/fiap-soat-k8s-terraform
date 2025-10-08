@@ -73,3 +73,7 @@ fiap-soat-nestjs-app.tar.gz
 # Scripts arquivados (redundantes)
 scripts/archived/
 
+# Documentos de avaliação (manter apenas README.md)
+AVALIACAO-PROFESSOR.md
+PROMPT-MELHORIAS.md
+
