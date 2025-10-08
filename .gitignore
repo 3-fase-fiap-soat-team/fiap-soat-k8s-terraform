@@ -70,12 +70,11 @@ local/
 tmp/
 fiap-soat-nestjs-app.tar.gz
 
-# Scripts auxiliares (manter apenas documentação)
-scripts/*.sh
-scripts/README.en.md
+# Scripts auxiliares - pasta completa ignorada
+scripts/
 
-# Scripts arquivados (redundantes)
-scripts/archived/
+# Documentação detalhada - pasta completa ignorada
+docs/
 
 # Documentos de avaliação (manter apenas README.md)
 AVALIACAO-PROFESSOR.md
